@@ -52,7 +52,6 @@ public class AuthenticationServiceImpl  implements AuthenticationService {
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshToken)
                 .role(role)
                 .build();
     }
