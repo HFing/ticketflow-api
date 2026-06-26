@@ -24,7 +24,8 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfiguration {
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/users",
-            "/api/v1/auth/login"
+            "/api/v1/auth/login",
+            "/api/v1/auth/refresh-token"
     };
 
     private final CustomUserDetailService userDetailService;
