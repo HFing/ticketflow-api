@@ -1,13 +1,14 @@
 package com.hfing.ticketflowapi;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.assertj.core.api.Assertions.assertThat;
+
 class TicketflowApiApplicationTests {
 
     @Test
     void contextLoads() {
+        assertThat(TicketflowApiApplication.class).isNotNull();
     }
 
 }

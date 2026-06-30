@@ -2,6 +2,7 @@ package com.hfing.ticketflowapi.service.impl;
 
 import com.hfing.ticketflowapi.entity.Role;
 import com.hfing.ticketflowapi.exception.ErrorCode;
+import com.hfing.ticketflowapi.exception.UserServiceException;
 import com.hfing.ticketflowapi.repository.RoleRepository;
 import com.hfing.ticketflowapi.service.RoleService;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,6 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public Role getRoleByName(String name) {
         return roleRepository.findByName(name)
-                .orElseThrow(() -> new RuntimeException(ErrorCode.ROLE_NOT_FOUND.getMessage()));
+                .orElseThrow(() -> new UserServiceException(ErrorCode.ROLE_NOT_FOUND));
     }
 }
