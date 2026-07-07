@@ -4,6 +4,7 @@ import com.hfing.ticketflowapi.dto.request.LoginRequest;
 import com.hfing.ticketflowapi.dto.response.ApiResponse;
 import com.hfing.ticketflowapi.dto.response.LoginResponse;
 import com.hfing.ticketflowapi.service.AuthenticationService;
+import com.nimbusds.jose.JOSEException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.text.ParseException;
 import java.util.Set;
 
 @RestController
@@ -51,6 +53,30 @@ public class AuthenticationController {
                 .code(HttpStatus.OK.value())
                 .message("Token refreshed successfully")
                 .data(data)
+                .build();
+    }
+
+    @PostMapping("/logout")
+    ApiResponse<Void> logout(
+            @CookieValue("refresh_token") String refreshToken,
+            HttpServletResponse response
+    ) throws ParseException, JOSEException {
+        // 1. Gọi service để thu hồi tokens
+        authenticationService.logout(refreshToken);
+
+        // 2. Xóa refresh token cookie
+        // Set value = "" và maxAge = 0 để browser xóa cookie
+        Cookie cookie = new Cookie("refresh_token", "");
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false);
+        cookie.setMaxAge(0); // Xóa cookie ngay lập tức
+
+        response.addCookie(cookie);
+
+        return ApiResponse.<Void>builder()
+                .code(HttpStatus.OK.value())
+                .message("Logout successful")
                 .build();
     }
 

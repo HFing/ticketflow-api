@@ -1,5 +1,6 @@
 package com.hfing.ticketflowapi.service;
 
+import com.hfing.ticketflowapi.dto.TokenDetails;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.SignedJWT;
 
@@ -8,6 +9,6 @@ import java.util.Set;
 
 public interface JwtService {
     String generateAccessToken(String userId, String role);
-    String generateRefreshToken(String userId);
     SignedJWT validateToken (String token) throws ParseException, JOSEException;
+    TokenDetails generateRefreshToken(String userId);
 }

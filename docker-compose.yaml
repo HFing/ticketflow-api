@@ -12,8 +12,19 @@ services:
     networks:
       - app_network
 
+  redis:
+    image: redis:8.4.2
+    container_name: ticketflow-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   app_network:
