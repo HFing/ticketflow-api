@@ -9,8 +9,17 @@ spring:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:update}
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-
+  cache:
+    type: redis
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha

@@ -5,6 +5,7 @@ import com.hfing.ticketflowapi.dto.response.ApiResponse;
 import com.hfing.ticketflowapi.dto.response.LoginResponse;
 import com.hfing.ticketflowapi.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -22,6 +23,10 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
 
 
+    @Operation(
+            summary = "Login",
+            description = "Authenticate user and return access token and refresh token"
+    )
     @PostMapping("/login")
     ApiResponse<LoginResponse> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
         var loginResult = authenticationService.login(request);
