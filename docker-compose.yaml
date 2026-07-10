@@ -22,6 +22,77 @@ services:
     networks:
       - app_network
 
+  zookeeper-01:
+    image: zookeeper:3.9.2
+    container_name: zookeeper-01
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zookeeper-01:2888:3888;2181 server.2=zookeeper-02:2888:3888;2181 server.3=zookeeper-03:2888:3888;2181
+    networks:
+      - app_network
+
+  zookeeper-02:
+    image: zookeeper:3.9.2
+    container_name: zookeeper-02
+    ports:
+      - "2182:2181"
+    environment:
+      ZOO_MY_ID: 2
+      ZOO_SERVERS: server.1=zookeeper-01:2888:3888;2181 server.2=zookeeper-02:2888:3888;2181 server.3=zookeeper-03:2888:3888;2181
+    networks:
+      - app_network
+
+  zookeeper-03:
+    image: zookeeper:3.9.2
+    container_name: zookeeper-03
+    ports:
+      - "2183:2181"
+    environment:
+      ZOO_MY_ID: 3
+      ZOO_SERVERS: server.1=zookeeper-01:2888:3888;2181 server.2=zookeeper-02:2888:3888;2181 server.3=zookeeper-03:2888:3888;2181
+    networks:
+      - app_network
+
+  kafka-broker-01:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-broker-01
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-01:2181,zookeeper-02:2181,zookeeper-03:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-01:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+    depends_on:
+      - zookeeper-01
+      - zookeeper-02
+      - zookeeper-03
+    networks:
+      - app_network
+
+  kafka-broker-02:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-broker-02
+    ports:
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-01:2181,zookeeper-02:2181,zookeeper-03:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-02:29092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+    depends_on:
+      - zookeeper-01
+      - zookeeper-02
+      - zookeeper-03
+    networks:
+      - app_network
+
 volumes:
   postgres_data:
   redis_data:

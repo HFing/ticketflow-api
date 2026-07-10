@@ -9,12 +9,13 @@ import com.hfing.ticketflowapi.entity.User;
 import com.hfing.ticketflowapi.exception.ErrorCode;
 import com.hfing.ticketflowapi.exception.UserServiceException;
 import com.hfing.ticketflowapi.mapper.UserMapper;
+import com.hfing.ticketflowapi.dto.event.UserRegisteredEvent;
 import com.hfing.ticketflowapi.repository.UserRepository;
 import com.hfing.ticketflowapi.service.RoleService;
 import com.hfing.ticketflowapi.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -27,12 +28,13 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final RoleService roleService;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override
     public CreateUserResponse createUser(CreateUserRequest request) {
 
         if (userRepository.existsByEmail(request.email())) {
-            throw new RuntimeException(ErrorCode.USER_ALREADY_EXISTS.getMessage());
+            throw new UserServiceException(ErrorCode.USER_ALREADY_EXISTS);
         }
 
         User user = userMapper.toUser(request);
@@ -44,6 +46,17 @@ public class UserServiceImpl implements UserService {
         user.setRole(role);
 
         User savedUser = userRepository.save(user);
+
+        UserRegisteredEvent event = new UserRegisteredEvent(
+                savedUser.getEmail(),
+                savedUser.getFirstName(),
+                savedUser.getLastName());
+        try {
+            kafkaTemplate.send("user-registration", savedUser.getEmail(), event);
+            log.info("Published user registration event to Kafka for user: {}", savedUser.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to publish user registration event to Kafka for user: {}", savedUser.getEmail(), e);
+        }
 
         return userMapper.toCreateUserResponse(savedUser);
     }
