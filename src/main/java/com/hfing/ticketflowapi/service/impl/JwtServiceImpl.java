@@ -3,7 +3,7 @@ package com.hfing.ticketflowapi.service.impl;
 import com.hfing.ticketflowapi.common.enums.TokenType;
 import com.hfing.ticketflowapi.dto.TokenDetails;
 import com.hfing.ticketflowapi.exception.ErrorCode;
-import com.hfing.ticketflowapi.exception.UserServiceException;
+import com.hfing.ticketflowapi.exception.AppException;
 
 import com.hfing.ticketflowapi.service.JwtService;
 import com.hfing.ticketflowapi.service.RedisTokenService;
@@ -60,7 +60,7 @@ public class JwtServiceImpl implements JwtService {
         try {
             jwsObject.sign(new MACSigner(secretKey));
         } catch (JOSEException e) {
-            throw new UserServiceException(ErrorCode.TOKEN_GENERATION_FAILED);
+            throw new AppException(ErrorCode.TOKEN_GENERATION_FAILED);
         }
         return jwsObject.serialize();
     }
@@ -91,7 +91,7 @@ public class JwtServiceImpl implements JwtService {
         try {
             jwsObject.sign(new MACSigner(secretKey));
         } catch (JOSEException e) {
-            throw new UserServiceException(ErrorCode.TOKEN_GENERATION_FAILED);
+            throw new AppException(ErrorCode.TOKEN_GENERATION_FAILED);
         }
         String token = jwsObject.serialize();
 
@@ -110,17 +110,17 @@ public class JwtServiceImpl implements JwtService {
         // 1. Check expiration trước (nhanh nhất)
         Date expiration = signedJWT.getJWTClaimsSet().getExpirationTime();
         if(expiration.before(new Date()))
-            throw new UserServiceException(ErrorCode.TOKEN_EXPIRED);
+            throw new AppException(ErrorCode.TOKEN_EXPIRED);
 
         // 2. Verify signature (chậm hơn, cần crypto operation)
         boolean verify = signedJWT.verify(new MACVerifier(secretKey));
         if(!verify)
-            throw new UserServiceException(ErrorCode.TOKEN_INVALID);
+            throw new AppException(ErrorCode.TOKEN_INVALID);
 
         // 3. Check blacklist cuối cùng (cần query Redis)
         String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
         if(redisTokenService.existsByJwtId(jwtId))
-            throw new UserServiceException(ErrorCode.TOKEN_INVALID);
+            throw new AppException(ErrorCode.TOKEN_INVALID);
 
         return signedJWT;
     }

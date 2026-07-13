@@ -3,7 +3,7 @@ package com.hfing.ticketflowapi.controller;
 import com.hfing.ticketflowapi.entity.Role;
 import com.hfing.ticketflowapi.exception.ErrorCode;
 import com.hfing.ticketflowapi.exception.GlobalExceptionHandler;
-import com.hfing.ticketflowapi.exception.UserServiceException;
+import com.hfing.ticketflowapi.exception.AppException;
 import com.hfing.ticketflowapi.service.RoleService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,7 @@ class RoleControllerMockMvcTest {
     @Test
     void getRoleByName_whenRoleDoesNotExist_returnsNotFound() throws Exception {
         when(roleService.getRoleByName("UNKNOWN"))
-                .thenThrow(new UserServiceException(ErrorCode.ROLE_NOT_FOUND));
+                .thenThrow(new AppException(ErrorCode.ROLE_NOT_FOUND));
 
         mockMvc.perform(get("/api/v1/roles/{name}", "UNKNOWN")
                         .accept(MediaType.APPLICATION_JSON))

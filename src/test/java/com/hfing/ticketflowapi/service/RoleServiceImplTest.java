@@ -2,7 +2,7 @@ package com.hfing.ticketflowapi.service;
 
 import com.hfing.ticketflowapi.entity.Role;
 import com.hfing.ticketflowapi.exception.ErrorCode;
-import com.hfing.ticketflowapi.exception.UserServiceException;
+import com.hfing.ticketflowapi.exception.AppException;
 import com.hfing.ticketflowapi.repository.RoleRepository;
 import com.hfing.ticketflowapi.service.impl.RoleServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,7 @@ class RoleServiceImplTest {
         when(roleRepository.findByName("UNKNOWN")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> roleService.getRoleByName("UNKNOWN"))
-                .isInstanceOf(UserServiceException.class)
+                .isInstanceOf(AppException.class)
                 .hasMessage(ErrorCode.ROLE_NOT_FOUND.getMessage())
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.ROLE_NOT_FOUND);

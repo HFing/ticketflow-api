@@ -49,6 +49,15 @@ public class User extends BaseEntity implements UserDetails {
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
+    private String coverKey;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @OneToMany(mappedBy = "organizer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Event> events = new java.util.ArrayList<>();
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (role == null) {

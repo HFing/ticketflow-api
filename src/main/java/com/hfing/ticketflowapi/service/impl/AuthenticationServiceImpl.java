@@ -7,7 +7,7 @@ import com.hfing.ticketflowapi.dto.response.LoginResult;
 import com.hfing.ticketflowapi.entity.RedisToken;
 import com.hfing.ticketflowapi.entity.User;
 import com.hfing.ticketflowapi.exception.ErrorCode;
-import com.hfing.ticketflowapi.exception.UserServiceException;
+import com.hfing.ticketflowapi.exception.AppException;
 import com.hfing.ticketflowapi.repository.UserRepository;
 import com.hfing.ticketflowapi.service.AuthenticationService;
 import com.hfing.ticketflowapi.service.JwtService;
@@ -48,14 +48,14 @@ public class AuthenticationServiceImpl  implements AuthenticationService {
 
         User user = (User) authenticate.getPrincipal();
         if (user == null) {
-            throw new UserServiceException(ErrorCode.USER_NOT_FOUND);
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
         }
 
         String role = user.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
                 .findFirst()
-                .orElseThrow(() -> new UserServiceException(ErrorCode.ROLE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
 
         String accessToken = jwtService.generateAccessToken(user.getId(), role);
@@ -83,13 +83,13 @@ public class AuthenticationServiceImpl  implements AuthenticationService {
             String userId = signedJWT.getJWTClaimsSet().getSubject();
 
             User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new UserServiceException(ErrorCode.USER_NOT_FOUND));
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
             String role = user.getAuthorities()
                     .stream()
                     .map(GrantedAuthority::getAuthority)
                     .findFirst()
-                    .orElseThrow(() -> new UserServiceException(ErrorCode.ROLE_NOT_FOUND));
+                    .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
             String newAccessToken = jwtService.generateAccessToken(userId,role);
 
@@ -99,7 +99,7 @@ public class AuthenticationServiceImpl  implements AuthenticationService {
                     .build();
 
         } catch (ParseException | JOSEException e) {
-            throw new UserServiceException(ErrorCode.TOKEN_INVALID);
+            throw new AppException(ErrorCode.TOKEN_INVALID);
 
         }
     }
@@ -108,13 +108,13 @@ public class AuthenticationServiceImpl  implements AuthenticationService {
     public void logout(String refreshToken) throws ParseException, JOSEException {
         // 1. Validate refresh token có tồn tại không
         if (refreshToken == null) {
-            throw new UserServiceException(ErrorCode.MISSING_LOGOUT_INFO);
+            throw new AppException(ErrorCode.MISSING_LOGOUT_INFO);
         }
 
         // 2. Lấy thông tin user từ SecurityContext (từ access token)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if(authentication == null)
-            throw new UserServiceException(ErrorCode.TOKEN_INVALID);
+            throw new AppException(ErrorCode.TOKEN_INVALID);
         String userId = authentication.getName();
 
         // 3. Validate refresh token và lấy thông tin
@@ -126,7 +126,7 @@ public class AuthenticationServiceImpl  implements AuthenticationService {
         // 4. Verify userId từ access token và refresh token phải giống nhau
         // Tránh trường hợp user A dùng access token của mình + refresh token của user B
         if (!userId.equals(refreshUserId)) {
-            throw new UserServiceException(ErrorCode.TOKEN_INVALID);
+            throw new AppException(ErrorCode.TOKEN_INVALID);
         }
 
         // 5. Xóa refresh token khỏi Redis
@@ -136,7 +136,7 @@ public class AuthenticationServiceImpl  implements AuthenticationService {
         // 6. Lấy thông tin access token từ SecurityContext
         Jwt jwt = (Jwt) authentication.getPrincipal();
         if(jwt == null)
-            throw new UserServiceException(ErrorCode.TOKEN_INVALID);
+            throw new AppException(ErrorCode.TOKEN_INVALID);
 
         String accessJwtId = jwt.getId();
         Instant accessExpiration = jwt.getExpiresAt();
