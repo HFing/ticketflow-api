@@ -20,6 +20,12 @@ public enum ErrorCode {
     UNAUTHORIZED(401, "Unauthorized", HttpStatus.UNAUTHORIZED),
     FORBIDDEN(403, "Forbidden", HttpStatus.FORBIDDEN),
 
+    EVENT_NOT_FOUND(404, "Event not found", HttpStatus.NOT_FOUND),
+    EVENT_CREATION_PAST_START(400, "Event start time cannot be in the past", HttpStatus.BAD_REQUEST),
+    EVENT_START_AFTER_END(400, "Event start time must be before end time", HttpStatus.BAD_REQUEST),
+    EVENT_NOT_DRAFT(400, "Event is not in DRAFT status", HttpStatus.BAD_REQUEST),
+    EVENT_PUBLISH_MISSING_INFO(400, "Cannot publish event: missing required information (description, location, or price)", HttpStatus.BAD_REQUEST),
+    EVENT_FORBIDDEN_MODIFICATION(403, "You do not have permission to modify this event", HttpStatus.FORBIDDEN),
     ;
 
     private final int code;

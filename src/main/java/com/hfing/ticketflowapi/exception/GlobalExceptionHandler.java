@@ -53,9 +53,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
-    // validation in userservice
-    @ExceptionHandler(UserServiceException.class)
-    public ResponseEntity<ErrorResponse> handlerFLearningException(UserServiceException exception, WebRequest request) {
+    // validation in appservice
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<ErrorResponse> handleAppException(AppException exception, WebRequest request) {
         ErrorResponse response = ErrorResponse.builder()
                 .code(exception.getErrorCode().getCode())
                 .error(exception.getErrorCode().getHttpStatus().getReasonPhrase())

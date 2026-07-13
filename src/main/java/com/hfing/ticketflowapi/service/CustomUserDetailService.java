@@ -1,7 +1,7 @@
 package com.hfing.ticketflowapi.service;
 
 import com.hfing.ticketflowapi.exception.ErrorCode;
-import com.hfing.ticketflowapi.exception.UserServiceException;
+import com.hfing.ticketflowapi.exception.AppException;
 import com.hfing.ticketflowapi.repository.UserRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +19,6 @@ public class CustomUserDetailService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(@NonNull String email) throws UsernameNotFoundException {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserServiceException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 }

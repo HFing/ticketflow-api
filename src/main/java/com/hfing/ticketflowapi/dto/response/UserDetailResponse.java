@@ -12,5 +12,7 @@ public record UserDetailResponse(
         String lastName,
         String phone,
         String avatarKey,
-        UserStatus userStatus
+        UserStatus userStatus,
+        String coverKey,
+        String description
 ) {}

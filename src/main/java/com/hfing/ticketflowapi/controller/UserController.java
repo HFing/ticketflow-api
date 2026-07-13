@@ -1,11 +1,11 @@
 package com.hfing.ticketflowapi.controller;
 
 import com.hfing.ticketflowapi.dto.request.CreateUserRequest;
+import com.hfing.ticketflowapi.dto.request.UpdateUserRequest;
 import com.hfing.ticketflowapi.dto.response.ApiResponse;
 import com.hfing.ticketflowapi.dto.response.CreateUserResponse;
 import com.hfing.ticketflowapi.dto.response.UserDetailResponse;
 import com.hfing.ticketflowapi.service.UserService;
-import com.nimbusds.jwt.JWT;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,6 +28,7 @@ public class UserController {
                 .data(data)
                 .build();
     }
+
     @GetMapping("/me")
     ApiResponse<UserDetailResponse> getMyInfo (@AuthenticationPrincipal Jwt jwt){
         var userId = jwt.getSubject();
@@ -35,6 +36,20 @@ public class UserController {
         return ApiResponse.<UserDetailResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("User info retrieved successfully")
+                .data(data)
+                .build();
+    }
+
+    @PutMapping("/me")
+    ApiResponse<UserDetailResponse> updateMyInfo(
+            @RequestBody @Valid UpdateUserRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        var userId = jwt.getSubject();
+        var data = userService.updateUser(userId, request);
+        return ApiResponse.<UserDetailResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("User info updated successfully")
                 .data(data)
                 .build();
     }

@@ -3,7 +3,7 @@ package com.hfing.ticketflowapi.controller;
 import com.hfing.ticketflowapi.entity.Role;
 import com.hfing.ticketflowapi.exception.ErrorCode;
 import com.hfing.ticketflowapi.exception.GlobalExceptionHandler;
-import com.hfing.ticketflowapi.exception.UserServiceException;
+import com.hfing.ticketflowapi.exception.AppException;
 import com.hfing.ticketflowapi.service.RoleService;
 import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import org.junit.jupiter.api.AfterEach;
@@ -56,7 +56,7 @@ class RoleControllerRestAssuredTest {
     @Test
     void getRoleByName_whenRoleDoesNotExist_returnsNotFound() {
         when(roleService.getRoleByName("UNKNOWN"))
-                .thenThrow(new UserServiceException(ErrorCode.ROLE_NOT_FOUND));
+                .thenThrow(new AppException(ErrorCode.ROLE_NOT_FOUND));
 
         RestAssuredMockMvc.given()
                 .when()

@@ -7,7 +7,7 @@ import com.hfing.ticketflowapi.dto.response.UserDetailResponse;
 import com.hfing.ticketflowapi.entity.Role;
 import com.hfing.ticketflowapi.entity.User;
 import com.hfing.ticketflowapi.exception.ErrorCode;
-import com.hfing.ticketflowapi.exception.UserServiceException;
+import com.hfing.ticketflowapi.exception.AppException;
 import com.hfing.ticketflowapi.mapper.UserMapper;
 import com.hfing.ticketflowapi.dto.event.UserRegisteredEvent;
 import com.hfing.ticketflowapi.repository.UserRepository;
@@ -34,7 +34,7 @@ public class UserServiceImpl implements UserService {
     public CreateUserResponse createUser(CreateUserRequest request) {
 
         if (userRepository.existsByEmail(request.email())) {
-            throw new UserServiceException(ErrorCode.USER_ALREADY_EXISTS);
+            throw new AppException(ErrorCode.USER_ALREADY_EXISTS);
         }
 
         User user = userMapper.toUser(request);
@@ -64,7 +64,17 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDetailResponse myInfo(String userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserServiceException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         return userMapper.toUserDetailResponse(user);
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public UserDetailResponse updateUser(String userId, com.hfing.ticketflowapi.dto.request.UpdateUserRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        userMapper.updateUserFromRequest(request, user);
+        User savedUser = userRepository.save(user);
+        return userMapper.toUserDetailResponse(savedUser);
     }
 }
