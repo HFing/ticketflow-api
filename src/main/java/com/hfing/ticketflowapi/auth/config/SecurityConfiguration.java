@@ -30,8 +30,8 @@ public class SecurityConfiguration {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/api/events",
-            "/api/events/**"
+            "/api/v1/events",
+            "/api/v1/events/**"
     };
 
     private final CustomUserDetailService userDetailService;

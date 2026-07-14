@@ -1,19 +1,41 @@
 package com.hfing.ticketflowapi.event.service;
 
 import com.hfing.ticketflowapi.event.dto.CreateEventRequest;
+import com.hfing.ticketflowapi.event.dto.CreateEventShowRequest;
+import com.hfing.ticketflowapi.event.dto.CreateTicketTypeRequest;
 import com.hfing.ticketflowapi.event.dto.EventResponse;
+import com.hfing.ticketflowapi.event.dto.EventShowResponse;
+import com.hfing.ticketflowapi.event.dto.TicketTypeResponse;
 import com.hfing.ticketflowapi.event.dto.UpdateEventRequest;
 import java.util.List;
 
-
-
 public interface EventService {
     EventResponse createEvent(CreateEventRequest request, String currentUserId);
-    List<EventResponse> getEvents(String currentUserId, String role);
-    EventResponse getEventById(String id, String currentUserId, String role);
+
+    List<EventResponse> getEvents();
+
+    EventResponse getEventById(String id);
+
     EventResponse updateEvent(String id, UpdateEventRequest request, String currentUserId, String role);
+
     void deleteEvent(String id, String currentUserId, String role);
-    EventResponse publishEvent(String id, String currentUserId, String role);
+
     EventResponse cancelEvent(String id, String currentUserId, String role);
+
     EventResponse getEventDetailFromCache(String id);
+
+    List<EventResponse> getEventsFromCache();
+
+    EventShowResponse createShow(String eventId, CreateEventShowRequest request, String currentUserId, String role);
+
+    TicketTypeResponse createTicketType(String showId, CreateTicketTypeRequest request, String currentUserId,
+            String role);
+
+    EventResponse submitForReview(String eventId, String currentUserId, String role);
+
+    List<EventResponse> getPendingEvents();
+
+    EventResponse approveEvent(String eventId);
+
+    EventResponse rejectEvent(String eventId);
 }

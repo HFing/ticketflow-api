@@ -13,10 +13,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface EventRepository extends JpaRepository<Event, String> {
 
-    List<Event> findByStatusOrderByStartTimeAsc(EventStatus status);
+    @Query("SELECT e FROM Event e WHERE e.status = :status ORDER BY (SELECT MIN(s.startTime) FROM EventShow s WHERE s.event = e) ASC NULLS LAST")
+    List<Event> findByStatusOrderByEarliestShowStartTime(@Param("status") EventStatus status);
 
-    @Query("SELECT e FROM Event e WHERE e.status = 'PUBLISHED' OR e.organizer.id = :organizerId ORDER BY e.startTime ASC")
+    @Query("SELECT e FROM Event e WHERE e.status = 'PUBLISHED' OR e.organizer.id = :organizerId ORDER BY (SELECT MIN(s.startTime) FROM EventShow s WHERE s.event = e) ASC NULLS LAST")
     List<Event> findPublishedOrOrganizerEvents(@Param("organizerId") String organizerId);
 
-    List<Event> findAllByOrderByStartTimeAsc();
+    @Query("SELECT e FROM Event e ORDER BY (SELECT MIN(s.startTime) FROM EventShow s WHERE s.event = e) ASC NULLS LAST")
+    List<Event> findAllOrderByEarliestShowStartTime();
 }

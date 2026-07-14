@@ -11,8 +11,6 @@ public record EventResponse(
         String id,
         String name,
         String description,
-        LocalDateTime startTime,
-        LocalDateTime endTime,
         String location,
         EventStatus status,
         String organizerId,
