@@ -1,12 +1,19 @@
 package com.hfing.ticketflowapi.auth.service.impl;
 
+import static com.hfing.ticketflowapi.auth.constant.JWTConstant.JWT_ISSUER;
+import static com.hfing.ticketflowapi.auth.constant.JWTConstant.ROLES;
+import static com.hfing.ticketflowapi.auth.constant.JWTConstant.TOKEN_TYPE;
+
 import com.hfing.ticketflowapi.auth.dto.TokenDetails;
 import com.hfing.ticketflowapi.auth.enums.TokenType;
 import com.hfing.ticketflowapi.auth.service.JwtService;
-import com.hfing.ticketflowapi.auth.service.RedisTokenService;
 import com.hfing.ticketflowapi.common.exception.AppException;
 import com.hfing.ticketflowapi.common.exception.ErrorCode;
-import com.nimbusds.jose.*;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -16,31 +23,19 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import static com.hfing.ticketflowapi.auth.constant.JWTConstant.*;
-
-
-
 
 @Service
-@RequiredArgsConstructor
 public class JwtServiceImpl implements JwtService {
-
-    private final RedisTokenService redisTokenService;
 
     @Value("${jwt.secret-key}")
     private String secretKey;
 
     @Override
     public String generateAccessToken(String userId, String role) {
-        // Header
-        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
-
         Date issueTime = new Date();
         Date expiredTime = new Date(Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli());
-        String jwtId = UUID.randomUUID().toString();
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                 .subject(userId)
@@ -48,27 +43,15 @@ public class JwtServiceImpl implements JwtService {
                 .claim(ROLES, role)
                 .issueTime(issueTime)
                 .expirationTime(expiredTime)
-                .jwtID(jwtId)
-                .claim(TOKEN_TYPE, TokenType.ACCESS_TOKEN)
+                .jwtID(UUID.randomUUID().toString())
+                .claim(TOKEN_TYPE, TokenType.ACCESS_TOKEN.name())
                 .build();
 
-        // Payload
-        Payload payload = new Payload(claimsSet.toJSONObject());
-
-        // Signature
-        JWSObject jwsObject = new JWSObject(header, payload);
-        try {
-            jwsObject.sign(new MACSigner(secretKey));
-        } catch (JOSEException e) {
-            throw new AppException(ErrorCode.TOKEN_GENERATION_FAILED);
-        }
-        return jwsObject.serialize();
+        return sign(claimsSet);
     }
 
     @Override
     public TokenDetails generateRefreshToken(String userId) {
-        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
-
         Date issueTime = new Date();
         Date expiredTime = new Date(Instant.now().plus(14, ChronoUnit.DAYS).toEpochMilli());
         long ttlSeconds = ChronoUnit.SECONDS.between(Instant.now(), expiredTime.toInstant());
@@ -79,24 +62,12 @@ public class JwtServiceImpl implements JwtService {
                 .issuer(JWT_ISSUER)
                 .issueTime(issueTime)
                 .expirationTime(expiredTime)
-                .claim(TOKEN_TYPE, TokenType.REFRESH_TOKEN)
                 .jwtID(jwtId)
+                .claim(TOKEN_TYPE, TokenType.REFRESH_TOKEN.name())
                 .build();
 
-        // Payload
-        Payload payload = new Payload(claimsSet.toJSONObject());
-
-        // Signature
-        JWSObject jwsObject = new JWSObject(header, payload);
-        try {
-            jwsObject.sign(new MACSigner(secretKey));
-        } catch (JOSEException e) {
-            throw new AppException(ErrorCode.TOKEN_GENERATION_FAILED);
-        }
-        String token = jwsObject.serialize();
-
         return TokenDetails.builder()
-                .value(token)
+                .value(sign(claimsSet))
                 .jwtId(jwtId)
                 .ttlSeconds(ttlSeconds)
                 .build();
@@ -104,24 +75,31 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public SignedJWT validateToken(String token) throws ParseException, JOSEException {
-        // Parse token
         SignedJWT signedJWT = SignedJWT.parse(token);
 
-        // 1. Check expiration trước (nhanh nhất)
         Date expiration = signedJWT.getJWTClaimsSet().getExpirationTime();
-        if(expiration.before(new Date()))
+        if (expiration == null || expiration.before(new Date())) {
             throw new AppException(ErrorCode.TOKEN_EXPIRED);
+        }
 
-        // 2. Verify signature (chậm hơn, cần crypto operation)
-        boolean verify = signedJWT.verify(new MACVerifier(secretKey));
-        if(!verify)
+        boolean verified = signedJWT.verify(new MACVerifier(secretKey));
+        if (!verified) {
             throw new AppException(ErrorCode.TOKEN_INVALID);
-
-        // 3. Check blacklist cuối cùng (cần query Redis)
-        String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
-        if(redisTokenService.existsByJwtId(jwtId))
-            throw new AppException(ErrorCode.TOKEN_INVALID);
+        }
 
         return signedJWT;
+    }
+
+    private String sign(JWTClaimsSet claimsSet) {
+        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
+        JWSObject jwsObject = new JWSObject(header, new Payload(claimsSet.toJSONObject()));
+
+        try {
+            jwsObject.sign(new MACSigner(secretKey));
+        } catch (JOSEException e) {
+            throw new AppException(ErrorCode.TOKEN_GENERATION_FAILED);
+        }
+
+        return jwsObject.serialize();
     }
 }

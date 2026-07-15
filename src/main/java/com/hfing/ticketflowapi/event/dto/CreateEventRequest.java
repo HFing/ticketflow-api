@@ -16,17 +16,11 @@ public record CreateEventRequest(
 
                 String description,
 
-                @NotNull(message = "Start time is required") @Future(message = "Start time must be in the future") LocalDateTime startTime,
-
-                @NotNull(message = "End time is required") LocalDateTime endTime,
-
                 String location,
 
                 String bannerUrl,
 
                 String shortImageUrl,
 
-                @NotNull(message = "Event category is required") EventCategory category,
-
-                @Size(min = 1, message = "At least one show must be specified") List<EventShowRequest> shows) {
+                @NotNull(message = "Event category is required") EventCategory category) {
 }

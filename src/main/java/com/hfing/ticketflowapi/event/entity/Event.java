@@ -27,17 +27,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
-
-
 @Entity
-@Table(
-    name = "events",
-    indexes = {
-        @Index(name = "idx_events_status_start_time", columnList = "status, start_time"),
+@Table(name = "events", indexes = {
+        @Index(name = "idx_events_status", columnList = "status"),
         @Index(name = "idx_events_organizer_id", columnList = "organizer_id")
-    }
-)
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -54,12 +48,6 @@ public class Event extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Column(name = "start_time", nullable = false)
-    private LocalDateTime startTime;
-
-    @Column(name = "end_time", nullable = false)
-    private LocalDateTime endTime;
 
     @Column(length = 255)
     private String location;

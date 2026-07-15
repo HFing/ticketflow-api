@@ -1,10 +1,14 @@
 package com.hfing.ticketflowapi.auth.service.impl;
 
+import static com.hfing.ticketflowapi.auth.constant.JWTConstant.TOKEN_TYPE;
+import static com.hfing.ticketflowapi.auth.service.RedisTokenService.ACCESS_TOKEN_BLACKLIST_PREFIX;
+
 import com.hfing.ticketflowapi.auth.dto.LoginRequest;
 import com.hfing.ticketflowapi.auth.dto.LoginResponse;
 import com.hfing.ticketflowapi.auth.dto.LoginResult;
 import com.hfing.ticketflowapi.auth.dto.TokenDetails;
 import com.hfing.ticketflowapi.auth.entity.RedisToken;
+import com.hfing.ticketflowapi.auth.enums.TokenType;
 import com.hfing.ticketflowapi.auth.service.AuthenticationService;
 import com.hfing.ticketflowapi.auth.service.JwtService;
 import com.hfing.ticketflowapi.auth.service.RedisTokenService;
@@ -26,11 +30,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
-
-
 @Service
 @RequiredArgsConstructor
-public class AuthenticationServiceImpl  implements AuthenticationService {
+public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
@@ -39,36 +41,21 @@ public class AuthenticationServiceImpl  implements AuthenticationService {
 
     @Override
     public LoginResult login(LoginRequest request) {
-        UsernamePasswordAuthenticationToken authenticationToken =
-                new UsernamePasswordAuthenticationToken(
-                        request.email(),
-                        request.password()
-                );
-
-        Authentication authenticate = authenticationManager.authenticate(authenticationToken);
+        Authentication authenticate = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.email(), request.password())
+        );
 
         User user = (User) authenticate.getPrincipal();
-        if (user == null) {
-            throw new AppException(ErrorCode.USER_NOT_FOUND);
-        }
-
-        String role = user.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .findFirst()
-                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-
+        String role = extractRole(user);
 
         String accessToken = jwtService.generateAccessToken(user.getId(), role);
         TokenDetails refreshToken = jwtService.generateRefreshToken(user.getId());
 
-        RedisToken redisToken = RedisToken.builder()
+        redisTokenService.saveToken(RedisToken.builder()
                 .jwtId(refreshToken.jwtId())
                 .userId(user.getId())
                 .expiration(refreshToken.ttlSeconds())
-                .build();
-
-        redisTokenService.saveToken(redisToken);
+                .build());
 
         return LoginResult.builder()
                 .accessToken(accessToken)
@@ -81,86 +68,87 @@ public class AuthenticationServiceImpl  implements AuthenticationService {
     public LoginResponse refreshToken(String refreshToken) {
         try {
             SignedJWT signedJWT = jwtService.validateToken(refreshToken);
-            String userId = signedJWT.getJWTClaimsSet().getSubject();
+            validateRefreshToken(signedJWT);
 
+            String refreshJwtId = signedJWT.getJWTClaimsSet().getJWTID();
+            if (!redisTokenService.existsByJwtId(refreshJwtId)) {
+                throw new AppException(ErrorCode.TOKEN_INVALID);
+            }
+
+            String userId = signedJWT.getJWTClaimsSet().getSubject();
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-            String role = user.getAuthorities()
-                    .stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .findFirst()
-                    .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-
-            String newAccessToken = jwtService.generateAccessToken(userId,role);
+            String role = extractRole(user);
 
             return LoginResponse.builder()
-                    .accessToken(newAccessToken)
+                    .accessToken(jwtService.generateAccessToken(userId, role))
                     .role(role)
                     .build();
-
         } catch (ParseException | JOSEException e) {
             throw new AppException(ErrorCode.TOKEN_INVALID);
-
         }
     }
 
     @Override
     public void logout(String refreshToken) throws ParseException, JOSEException {
-        // 1. Validate refresh token có tồn tại không
         if (refreshToken == null) {
             throw new AppException(ErrorCode.MISSING_LOGOUT_INFO);
         }
 
-        // 2. Lấy thông tin user từ SecurityContext (từ access token)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if(authentication == null)
+        if (authentication == null) {
             throw new AppException(ErrorCode.TOKEN_INVALID);
-        String userId = authentication.getName();
+        }
 
-        // 3. Validate refresh token và lấy thông tin
+        String userId = authentication.getName();
         SignedJWT signedRefreshToken = jwtService.validateToken(refreshToken);
+        validateRefreshToken(signedRefreshToken);
 
         String refreshUserId = signedRefreshToken.getJWTClaimsSet().getSubject();
         String refreshJwtId = signedRefreshToken.getJWTClaimsSet().getJWTID();
-
-        // 4. Verify userId từ access token và refresh token phải giống nhau
-        // Tránh trường hợp user A dùng access token của mình + refresh token của user B
-        if (!userId.equals(refreshUserId)) {
+        if (!userId.equals(refreshUserId) || !redisTokenService.existsByJwtId(refreshJwtId)) {
             throw new AppException(ErrorCode.TOKEN_INVALID);
         }
 
-        // 5. Xóa refresh token khỏi Redis
-        // Refresh token đã được lưu vào Redis khi login (Lesson 4.14)
         redisTokenService.deleteTokenByJwtId(refreshJwtId);
+        blacklistCurrentAccessToken(authentication, userId);
+    }
 
-        // 6. Lấy thông tin access token từ SecurityContext
-        Jwt jwt = (Jwt) authentication.getPrincipal();
-        if(jwt == null)
+    private String extractRole(User user) {
+        if (user == null) {
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        return user.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+    }
+
+    private void validateRefreshToken(SignedJWT signedJWT) throws ParseException {
+        String tokenType = String.valueOf(signedJWT.getJWTClaimsSet().getClaim(TOKEN_TYPE));
+        if (!TokenType.REFRESH_TOKEN.name().equals(tokenType)) {
             throw new AppException(ErrorCode.TOKEN_INVALID);
-
-        String accessJwtId = jwt.getId();
-        Instant accessExpiration = jwt.getExpiresAt();
-
-        // 7. Tính TTL còn lại của access token
-        // TTL = thời gian hết hạn - thời gian hiện tại
-        long ttl = ChronoUnit.SECONDS.between(
-                Instant.now(),
-                accessExpiration
-        );
-
-        // 8. Nếu access token còn hạn → lưu vào Redis blacklist
-        // Nếu đã hết hạn (ttl <= 0) → không cần lưu vì token đã invalid
-        if (ttl > 0) {
-            redisTokenService.saveToken(
-                    RedisToken.builder()
-                            .jwtId(accessJwtId)
-                            .userId(userId)
-                            .expiration(ttl)
-                            .build()
-            );
         }
     }
 
+    private void blacklistCurrentAccessToken(Authentication authentication, String userId) {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Instant accessExpiration = jwt.getExpiresAt();
+        if (accessExpiration == null) {
+            throw new AppException(ErrorCode.TOKEN_INVALID);
+        }
 
+        long ttl = ChronoUnit.SECONDS.between(Instant.now(), accessExpiration);
+        if (ttl <= 0) {
+            return;
+        }
+
+        redisTokenService.saveToken(RedisToken.builder()
+                .jwtId(ACCESS_TOKEN_BLACKLIST_PREFIX + jwt.getId())
+                .userId(userId)
+                .expiration(ttl)
+                .build());
+    }
 }

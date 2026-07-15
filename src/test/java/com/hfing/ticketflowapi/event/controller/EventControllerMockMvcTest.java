@@ -39,13 +39,19 @@ class EventControllerMockMvcTest {
 
     @Test
     void getEvents_whenNoAuth_returnsEvents() throws Exception {
-        var show = new EventShowResponse("show-1", LocalDateTime.now(), LocalDateTime.now().plusHours(2));
+        var show = new EventShowResponse(
+                "show-1",
+                LocalDateTime.now(),
+                LocalDateTime.now().plusHours(2),
+                LocalDateTime.now().minusHours(1),
+                LocalDateTime.now(),
+                com.hfing.ticketflowapi.event.enums.EventShowStatus.SCHEDULED,
+                List.of()
+        );
         var event = new EventResponse(
                 "event-1",
                 "Concert",
                 "Rock concert",
-                LocalDateTime.now(),
-                LocalDateTime.now().plusHours(2),
                 "Stadium",
                 EventStatus.PUBLISHED,
                 "organizer-1",
@@ -56,9 +62,9 @@ class EventControllerMockMvcTest {
                 Instant.now(),
                 Instant.now()
         );
-        when(eventService.getEvents(null, null)).thenReturn(List.of(event));
+        when(eventService.getPublishedUpcomingEvents()).thenReturn(List.of(event));
 
-        mockMvc.perform(get("/api/events")
+        mockMvc.perform(get("/api/v1/events")
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
