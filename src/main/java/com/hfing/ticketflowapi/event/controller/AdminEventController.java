@@ -6,8 +6,6 @@ import com.hfing.ticketflowapi.event.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,11 +30,8 @@ public class AdminEventController {
 
     @GetMapping("/{eventId}")
     public ApiResponse<EventResponse> getEventById(
-            @PathVariable String eventId,
-            @AuthenticationPrincipal Jwt jwt) {
-        String userId = jwt.getSubject();
-        String role = jwt.getClaimAsString("roles");
-        var data = eventService.getEventById(eventId);
+            @PathVariable String eventId) {
+        var data = eventService.getAdminEventById(eventId);
         return ApiResponse.<EventResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Event details retrieved successfully")

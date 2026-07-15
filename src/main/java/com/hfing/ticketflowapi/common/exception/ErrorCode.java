@@ -1,8 +1,5 @@
 package com.hfing.ticketflowapi.common.exception;
 
-import com.hfing.ticketflowapi.event.entity.Event;
-import com.hfing.ticketflowapi.user.entity.Role;
-import com.hfing.ticketflowapi.user.entity.User;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -31,6 +28,7 @@ public enum ErrorCode {
     EVENT_PUBLISH_MISSING_INFO(400, "Cannot publish event: missing required information (description, location, or price)", HttpStatus.BAD_REQUEST),
     EVENT_FORBIDDEN_MODIFICATION(403, "You do not have permission to modify this event", HttpStatus.FORBIDDEN),
     EVENT_NOT_DRAFT_OR_REJECTED(400, "Event must be in DRAFT or REJECTED status to submit for review", HttpStatus.BAD_REQUEST),
+    EVENT_NOT_PENDING_REVIEW(400, "Event must be in PENDING_REVIEW status", HttpStatus.BAD_REQUEST),
     EVENT_NO_SHOWS(400, "Event must have at least one show", HttpStatus.BAD_REQUEST),
     SHOW_NO_TICKET_TYPES(400, "Each show must have at least one ticket type", HttpStatus.BAD_REQUEST),
     SHOW_INVALID_TIME(400, "Show start time must be before end time", HttpStatus.BAD_REQUEST),

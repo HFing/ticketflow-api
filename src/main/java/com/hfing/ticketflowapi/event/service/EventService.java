@@ -10,21 +10,22 @@ import com.hfing.ticketflowapi.event.dto.UpdateEventRequest;
 import java.util.List;
 
 public interface EventService {
-    EventResponse createEvent(CreateEventRequest request, String currentUserId);
 
-    List<EventResponse> getEvents();
+    EventResponse createEvent(CreateEventRequest request);
 
-    EventResponse getEventById(String id);
+    List<EventResponse> getPublishedUpcomingEvents();
+
+    List<EventResponse> getAllEventsForAdmin();
+
+    EventResponse getAdminEventById(String id);
+
+    EventResponse getPublicEventById(String id);
 
     EventResponse updateEvent(String id, UpdateEventRequest request, String currentUserId, String role);
 
     void deleteEvent(String id, String currentUserId, String role);
 
     EventResponse cancelEvent(String id, String currentUserId, String role);
-
-    EventResponse getEventDetailFromCache(String id);
-
-    List<EventResponse> getEventsFromCache();
 
     EventShowResponse createShow(String eventId, CreateEventShowRequest request, String currentUserId, String role);
 

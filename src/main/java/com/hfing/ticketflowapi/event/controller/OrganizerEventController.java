@@ -21,10 +21,10 @@ public class OrganizerEventController {
 
         @PostMapping
         public ApiResponse<EventResponse> createEvent(
-                        @RequestBody @Valid CreateEventRequest request,
-                        @AuthenticationPrincipal Jwt jwt) {
-                String userId = jwt.getSubject();
-                var data = eventService.createEvent(request, userId);
+                        @RequestBody @Valid CreateEventRequest request) {
+
+                var data = eventService.createEvent(request);
+
                 return ApiResponse.<EventResponse>builder()
                                 .code(HttpStatus.CREATED.value())
                                 .message("Event created successfully as DRAFT")
@@ -59,7 +59,6 @@ public class OrganizerEventController {
                                 .message("Event deleted successfully")
                                 .build();
         }
-
 
         @PatchMapping("/{id}/cancel")
         public ApiResponse<EventResponse> cancelEvent(

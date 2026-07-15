@@ -17,17 +17,18 @@ import com.hfing.ticketflowapi.event.repository.EventShowRepository;
 import com.hfing.ticketflowapi.event.repository.TicketTypeRepository;
 import com.hfing.ticketflowapi.event.service.EventService;
 import com.hfing.ticketflowapi.user.entity.User;
+import com.hfing.ticketflowapi.user.enums.RoleType;
 import com.hfing.ticketflowapi.user.repository.UserRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,30 +45,31 @@ public class EventServiceImpl implements EventService {
     private final TicketTypeMapper ticketTypeMapper;
     private final CacheManager cacheManager;
 
-    @Autowired
-    @Lazy
-    private EventService self; // Self-injection to enable proxy invocation for @Cacheable
-
     @Override
     @Transactional
     @CacheEvict(value = "eventsList", allEntries = true)
-    public EventResponse createEvent(CreateEventRequest request, String currentUserId) {
-        User organizer = userRepository.findById(currentUserId)
+    public EventResponse createEvent(CreateEventRequest request) {
+
+        Jwt jwt = (Jwt) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        User organizer = userRepository.findById(jwt.getSubject())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         Event event = eventMapper.toEvent(request);
         event.setStatus(EventStatus.DRAFT);
         event.setOrganizer(organizer);
 
-        Event savedEvent = eventRepository.save(event);
-        return eventMapper.toEventResponse(savedEvent);
+        return eventMapper.toEventResponse(eventRepository.save(event));
     }
 
     @Override
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "eventsList", allEntries = true),
-            @CacheEvict(value = "eventDetail", key = "#id")
+            @CacheEvict(value = "adminEventDetail", key = "#id"),
+            @CacheEvict(value = "publicEventDetail", key = "#id")
     })
     public EventResponse updateEvent(String id, UpdateEventRequest request, String currentUserId, String role) {
         Event event = eventRepository.findById(id)
@@ -85,7 +87,8 @@ public class EventServiceImpl implements EventService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "eventsList", allEntries = true),
-            @CacheEvict(value = "eventDetail", key = "#id")
+            @CacheEvict(value = "adminEventDetail", key = "#id"),
+            @CacheEvict(value = "publicEventDetail", key = "#id")
     })
     public void deleteEvent(String id, String currentUserId, String role) {
         Event event = eventRepository.findById(id)
@@ -96,12 +99,12 @@ public class EventServiceImpl implements EventService {
         eventRepository.delete(event);
     }
 
-
     @Override
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "eventsList", allEntries = true),
-            @CacheEvict(value = "eventDetail", key = "#id")
+            @CacheEvict(value = "adminEventDetail", key = "#id"),
+            @CacheEvict(value = "publicEventDetail", key = "#id")
     })
     public EventResponse cancelEvent(String id, String currentUserId, String role) {
         Event event = eventRepository.findById(id)
@@ -119,10 +122,10 @@ public class EventServiceImpl implements EventService {
     }
 
     private void authorizeModification(Event event, String currentUserId, String role) {
-        if ("ADMIN".equals(role)) {
+        if (RoleType.ADMIN.name().equals(role)) {
             return;
         }
-        if ("ORGANIZER".equals(role)) {
+        if (RoleType.ORGANIZER.name().equals(role)) {
             if (event.getOrganizer() == null || !event.getOrganizer().getId().equals(currentUserId)) {
                 throw new AppException(ErrorCode.EVENT_FORBIDDEN_MODIFICATION);
             }
@@ -266,9 +269,8 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
 
-        if (event.getStatus() == EventStatus.PUBLISHED || event.getStatus() == EventStatus.CANCELLED
-                || event.getStatus() == EventStatus.COMPLETED) {
-            throw new AppException(ErrorCode.EVENT_NOT_DRAFT);
+        if (event.getStatus() != EventStatus.PENDING_REVIEW) {
+            throw new AppException(ErrorCode.EVENT_NOT_PENDING_REVIEW);
         }
 
         event.setStatus(EventStatus.PUBLISHED);
@@ -286,7 +288,7 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
 
         if (event.getStatus() != EventStatus.PENDING_REVIEW) {
-            throw new AppException(ErrorCode.EVENT_NOT_DRAFT);
+            throw new AppException(ErrorCode.EVENT_NOT_PENDING_REVIEW);
         }
 
         event.setStatus(EventStatus.REJECTED);
@@ -298,9 +300,13 @@ public class EventServiceImpl implements EventService {
     }
 
     private void evictEventDetailCache(String eventId) {
-        var cache = cacheManager.getCache("eventDetail");
-        if (cache != null) {
-            cache.evict(eventId);
+        var adminDetailCache = cacheManager.getCache("adminEventDetail");
+        if (adminDetailCache != null) {
+            adminDetailCache.evict(eventId);
+        }
+        var publicDetailCache = cacheManager.getCache("publicEventDetail");
+        if (publicDetailCache != null) {
+            publicDetailCache.evict(eventId);
         }
         var listCache = cacheManager.getCache("eventsList");
         if (listCache != null) {
@@ -309,33 +315,43 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventResponse> getEvents() {
-        List<EventResponse> allEvents = self.getEventsFromCache();
-        LocalDateTime now = LocalDateTime.now();
-        return allEvents.stream()
-                .filter(e -> e.shows() != null && e.shows().stream()
-                        .anyMatch(show -> show.startTime() != null && show.startTime().isAfter(now)))
+    @Cacheable(value = "eventsList", key = "'published-upcoming'")
+    public List<EventResponse> getPublishedUpcomingEvents() {
+        return eventRepository
+                .findPublishedEventsWithUpcomingShows(
+                        EventStatus.PUBLISHED,
+                        LocalDateTime.now())
+                .stream()
+                .map(eventMapper::toEventResponse)
                 .toList();
     }
 
     @Override
-    @Cacheable(value = "eventsList", key = "'published'")
-    public List<EventResponse> getEventsFromCache() {
-        List<Event> events = eventRepository.findByStatusOrderByEarliestShowStartTime(EventStatus.PUBLISHED);
-        return events.stream().map(eventMapper::toEventResponse).toList();
+    @Cacheable(value = "eventsList", key = "'admin-all'")
+    public List<EventResponse> getAllEventsForAdmin() {
+        return eventRepository
+                .findAllOrderByEarliestShowStartTime()
+                .stream()
+                .map(eventMapper::toEventResponse)
+                .toList();
     }
 
     @Override
-    public EventResponse getEventById(String id) {
-        EventResponse eventResponse = self.getEventDetailFromCache(id);
-        return eventResponse;
-    }
-
-    @Override
-    @Cacheable(value = "eventDetail", key = "#id")
-    public EventResponse getEventDetailFromCache(String id) {
+    @Cacheable(value = "adminEventDetail", key = "#id")
+    public EventResponse getAdminEventById(String id) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
+
+        return eventMapper.toEventResponse(event);
+    }
+
+    @Override
+    @Cacheable(value = "publicEventDetail", key = "#id")
+    public EventResponse getPublicEventById(String id) {
+        Event event = eventRepository
+                .findByIdAndStatusPublished(id)
+                .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
+
         return eventMapper.toEventResponse(event);
     }
 

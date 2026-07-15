@@ -62,7 +62,7 @@ class EventControllerMockMvcTest {
                 Instant.now(),
                 Instant.now()
         );
-        when(eventService.getEvents()).thenReturn(List.of(event));
+        when(eventService.getPublishedUpcomingEvents()).thenReturn(List.of(event));
 
         mockMvc.perform(get("/api/v1/events")
                         .accept(MediaType.APPLICATION_JSON))

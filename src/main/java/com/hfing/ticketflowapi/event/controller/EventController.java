@@ -2,7 +2,6 @@ package com.hfing.ticketflowapi.event.controller;
 
 import com.hfing.ticketflowapi.common.response.ApiResponse;
 import com.hfing.ticketflowapi.event.dto.EventResponse;
-import com.hfing.ticketflowapi.event.entity.Event;
 import com.hfing.ticketflowapi.event.service.EventService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +20,7 @@ public class EventController {
 
     @GetMapping
     public ApiResponse<List<EventResponse>> getEvents() {
-        var data = eventService.getEvents();
+        var data = eventService.getPublishedUpcomingEvents();
         return ApiResponse.<List<EventResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Events retrieved successfully")
@@ -31,7 +30,7 @@ public class EventController {
 
     @GetMapping("/{id}")
     public ApiResponse<EventResponse> getEventById(@PathVariable String id) {
-        var data = eventService.getEventById(id);
+        var data = eventService.getPublicEventById(id);
         return ApiResponse.<EventResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Event retrieved successfully")
