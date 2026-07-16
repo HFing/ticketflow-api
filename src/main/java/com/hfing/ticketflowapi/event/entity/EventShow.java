@@ -55,7 +55,8 @@ public class EventShow extends BaseEntity {
         boolean afterSaleStart = !now.isBefore(saleStartTime);
         boolean beforeSaleEnd = saleEndTime == null || !now.isAfter(saleEndTime);
 
-        return status == EventShowStatus.SCHEDULED
+        return status != EventShowStatus.CANCELLED
+                && status != EventShowStatus.COMPLETED
                 && afterSaleStart
                 && beforeSaleEnd;
     }

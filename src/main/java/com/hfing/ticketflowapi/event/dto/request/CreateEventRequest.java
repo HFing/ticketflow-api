@@ -1,14 +1,9 @@
-package com.hfing.ticketflowapi.event.dto;
+package com.hfing.ticketflowapi.event.dto.request;
 
-import com.hfing.ticketflowapi.event.entity.Event;
 import com.hfing.ticketflowapi.event.enums.EventCategory;
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.time.LocalDateTime;
-import java.util.List;
-
 
 
 public record CreateEventRequest(
@@ -17,6 +12,8 @@ public record CreateEventRequest(
                 String description,
 
                 String location,
+
+                String venue,
 
                 String bannerUrl,
 

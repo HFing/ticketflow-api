@@ -1,28 +1,24 @@
 package com.hfing.ticketflowapi.event.controller;
 
 import com.hfing.ticketflowapi.common.exception.GlobalExceptionHandler;
-import com.hfing.ticketflowapi.event.dto.EventResponse;
-import com.hfing.ticketflowapi.event.dto.EventShowResponse;
+import com.hfing.ticketflowapi.event.dto.response.PublicEventSummaryResponse;
 import com.hfing.ticketflowapi.event.enums.EventCategory;
-import com.hfing.ticketflowapi.event.enums.EventStatus;
 import com.hfing.ticketflowapi.event.service.EventService;
+import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-
-
 
 class EventControllerMockMvcTest {
 
@@ -38,29 +34,20 @@ class EventControllerMockMvcTest {
     }
 
     @Test
-    void getEvents_whenNoAuth_returnsEvents() throws Exception {
-        var show = new EventShowResponse(
-                "show-1",
-                LocalDateTime.now(),
-                LocalDateTime.now().plusHours(2),
-                LocalDateTime.now().minusHours(1),
-                LocalDateTime.now(),
-                com.hfing.ticketflowapi.event.enums.EventShowStatus.SCHEDULED,
-                List.of()
-        );
-        var event = new EventResponse(
+    void getEvents_whenNoAuth_returnsPublicEvents() throws Exception {
+        var event = new PublicEventSummaryResponse(
                 "event-1",
                 "Concert",
                 "Rock concert",
                 "Stadium",
-                EventStatus.PUBLISHED,
-                "organizer-1",
+                "TMA Hall",
+                "Organizer Event",
                 "http://banner.com",
                 "http://short.com",
+                true,
                 EventCategory.LIVE_MUSIC,
-                List.of(show),
-                Instant.now(),
-                Instant.now()
+                BigDecimal.valueOf(100000),
+                Instant.parse("2026-05-05T17:00:00Z")
         );
         when(eventService.getPublishedUpcomingEvents()).thenReturn(List.of(event));
 
@@ -71,6 +58,16 @@ class EventControllerMockMvcTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("Events retrieved successfully"))
                 .andExpect(jsonPath("$.data[0].id").value("event-1"))
-                .andExpect(jsonPath("$.data[0].name").value("Concert"));
+                .andExpect(jsonPath("$.data[0].name").value("Concert"))
+                .andExpect(jsonPath("$.data[0].venue").value("TMA Hall"))
+                .andExpect(jsonPath("$.data[0].isHot").value(true))
+                .andExpect(jsonPath("$.data[0].organizerName").value("Organizer Event"))
+                .andExpect(jsonPath("$.data[0].minPrice").value(100000))
+                .andExpect(jsonPath("$.data[0].day").value("2026-05-05T17:00:00Z"))
+                .andExpect(jsonPath("$.data[0].shows").doesNotExist())
+                .andExpect(jsonPath("$.data[0].status").doesNotExist())
+                .andExpect(jsonPath("$.data[0].organizerId").doesNotExist())
+                .andExpect(jsonPath("$.data[0].createdAt").doesNotExist())
+                .andExpect(jsonPath("$.data[0].updatedAt").doesNotExist());
     }
 }

@@ -1,4 +1,4 @@
-package com.hfing.ticketflowapi.event.dto;
+package com.hfing.ticketflowapi.event.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;

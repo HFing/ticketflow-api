@@ -52,9 +52,16 @@ public class Event extends BaseEntity {
     @Column(length = 255)
     private String location;
 
+    @Column(length = 255)
+    private String venue;
+
     private String bannerUrl;
 
     private String shortImageUrl;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean isHot = false;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
