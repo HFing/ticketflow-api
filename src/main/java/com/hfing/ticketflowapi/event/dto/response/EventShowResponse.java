@@ -1,4 +1,4 @@
-package com.hfing.ticketflowapi.event.dto;
+package com.hfing.ticketflowapi.event.dto.response;
 
 import com.hfing.ticketflowapi.event.enums.EventShowStatus;
 import java.time.LocalDateTime;

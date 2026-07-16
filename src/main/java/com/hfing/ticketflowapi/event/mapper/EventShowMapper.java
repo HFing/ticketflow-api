@@ -1,8 +1,12 @@
 package com.hfing.ticketflowapi.event.mapper;
 
-import com.hfing.ticketflowapi.event.dto.EventShowRequest;
-import com.hfing.ticketflowapi.event.dto.EventShowResponse;
+import com.hfing.ticketflowapi.event.dto.request.EventShowRequest;
+import com.hfing.ticketflowapi.event.dto.response.EventShowResponse;
+import com.hfing.ticketflowapi.event.dto.response.PublicEventShowResponse;
+import com.hfing.ticketflowapi.event.dto.response.PublicTicketTypeResponse;
 import com.hfing.ticketflowapi.event.entity.EventShow;
+import com.hfing.ticketflowapi.event.enums.EventShowSaleStatus;
+import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.NullValuePropertyMappingStrategy;
@@ -24,4 +28,11 @@ public interface EventShowMapper {
     EventShow toEventShow(EventShowRequest request);
 
     EventShowResponse toEventShowResponse(EventShow eventShow);
+
+    @Mapping(target = "saleStatus", source = "saleStatus")
+    @Mapping(target = "ticketTypes", source = "ticketTypes")
+    PublicEventShowResponse toPublicEventShowResponse(
+            EventShow eventShow,
+            EventShowSaleStatus saleStatus,
+            List<PublicTicketTypeResponse> ticketTypes);
 }

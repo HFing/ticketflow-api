@@ -11,6 +11,8 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   cache:
     type: redis
+    cache-names: eventsList,publicEventDetail,adminEventDetail
+
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -47,3 +49,7 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
+
+
+
+

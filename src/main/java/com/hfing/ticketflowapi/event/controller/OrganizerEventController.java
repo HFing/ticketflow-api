@@ -1,7 +1,13 @@
 package com.hfing.ticketflowapi.event.controller;
 
 import com.hfing.ticketflowapi.common.response.ApiResponse;
-import com.hfing.ticketflowapi.event.dto.*;
+import com.hfing.ticketflowapi.event.dto.request.CreateEventRequest;
+import com.hfing.ticketflowapi.event.dto.request.CreateEventShowRequest;
+import com.hfing.ticketflowapi.event.dto.request.CreateTicketTypeRequest;
+import com.hfing.ticketflowapi.event.dto.request.UpdateEventRequest;
+import com.hfing.ticketflowapi.event.dto.response.EventResponse;
+import com.hfing.ticketflowapi.event.dto.response.EventShowResponse;
+import com.hfing.ticketflowapi.event.dto.response.TicketTypeResponse;
 import com.hfing.ticketflowapi.event.service.EventService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,8 +43,8 @@ public class OrganizerEventController {
                         @PathVariable String id,
                         @RequestBody @Valid UpdateEventRequest request,
                         @AuthenticationPrincipal Jwt jwt) {
-                String userId = jwt.getSubject();
-                String role = jwt.getClaimAsString("roles");
+                var userId = jwt.getSubject();
+                var role = jwt.getClaimAsString("roles");
                 var data = eventService.updateEvent(id, request, userId, role);
                 return ApiResponse.<EventResponse>builder()
                                 .code(HttpStatus.OK.value())
@@ -51,8 +57,8 @@ public class OrganizerEventController {
         public ApiResponse<Void> deleteEvent(
                         @PathVariable String id,
                         @AuthenticationPrincipal Jwt jwt) {
-                String userId = jwt.getSubject();
-                String role = jwt.getClaimAsString("roles");
+                var userId = jwt.getSubject();
+                var role = jwt.getClaimAsString("roles");
                 eventService.deleteEvent(id, userId, role);
                 return ApiResponse.<Void>builder()
                                 .code(HttpStatus.OK.value())
@@ -64,8 +70,8 @@ public class OrganizerEventController {
         public ApiResponse<EventResponse> cancelEvent(
                         @PathVariable String id,
                         @AuthenticationPrincipal Jwt jwt) {
-                String userId = jwt.getSubject();
-                String role = jwt.getClaimAsString("roles");
+                var userId = jwt.getSubject();
+                var role = jwt.getClaimAsString("roles");
                 var data = eventService.cancelEvent(id, userId, role);
                 return ApiResponse.<EventResponse>builder()
                                 .code(HttpStatus.OK.value())
@@ -79,8 +85,8 @@ public class OrganizerEventController {
                         @PathVariable String eventId,
                         @RequestBody @Valid CreateEventShowRequest request,
                         @AuthenticationPrincipal Jwt jwt) {
-                String userId = jwt.getSubject();
-                String role = jwt.getClaimAsString("roles");
+                var userId = jwt.getSubject();
+                var role = jwt.getClaimAsString("roles");
                 var data = eventService.createShow(eventId, request, userId, role);
                 return ApiResponse.<EventShowResponse>builder()
                                 .code(HttpStatus.CREATED.value())
@@ -108,8 +114,8 @@ public class OrganizerEventController {
         public ApiResponse<EventResponse> submitReview(
                         @PathVariable String eventId,
                         @AuthenticationPrincipal Jwt jwt) {
-                String userId = jwt.getSubject();
-                String role = jwt.getClaimAsString("roles");
+                var userId = jwt.getSubject();
+                var role = jwt.getClaimAsString("roles");
                 var data = eventService.submitForReview(eventId, userId, role);
                 return ApiResponse.<EventResponse>builder()
                                 .code(HttpStatus.OK.value())

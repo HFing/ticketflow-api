@@ -1,4 +1,4 @@
-package com.hfing.ticketflowapi.event.dto;
+package com.hfing.ticketflowapi.event.dto.request;
 
 import com.hfing.ticketflowapi.event.enums.EventCategory;
 import jakarta.validation.constraints.NotBlank;
@@ -11,6 +11,8 @@ public record UpdateEventRequest(
                 String description,
 
                 String location,
+
+                String venue,
 
                 String bannerUrl,
 

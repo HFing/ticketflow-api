@@ -15,6 +15,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface EventRepository extends JpaRepository<Event, String> {
 
+    boolean existsByName(String name);
+
     @Query("SELECT e FROM Event e WHERE e.status = :status ORDER BY (SELECT MIN(s.startTime) FROM EventShow s WHERE s.event = e) ASC NULLS LAST")
     List<Event> findByStatusOrderByEarliestShowStartTime(@Param("status") EventStatus status);
 
@@ -28,18 +30,14 @@ public interface EventRepository extends JpaRepository<Event, String> {
     Optional<Event> findByIdAndStatusPublished(@Param("id") String id);
 
     @Query("""
-            SELECT DISTINCT e
-            FROM Event e
-            JOIN e.shows es
-            WHERE e.status = :status
-              AND es.startTime > :now
-            ORDER BY (
-                SELECT MIN(es2.startTime)
-                FROM EventShow es2
-                WHERE es2.event = e
-                  AND es2.startTime > :now
-            )
-            """)
+        SELECT e
+        FROM Event e
+        JOIN e.shows es
+        WHERE e.status = :status
+          AND es.startTime > :now
+        GROUP BY e
+        ORDER BY MIN(es.startTime) ASC
+        """)
     List<Event> findPublishedEventsWithUpcomingShows(
             @Param("status") EventStatus status,
             @Param("now") LocalDateTime now);

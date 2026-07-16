@@ -1,25 +1,27 @@
 package com.hfing.ticketflowapi.event.service;
 
-import com.hfing.ticketflowapi.event.dto.CreateEventRequest;
-import com.hfing.ticketflowapi.event.dto.CreateEventShowRequest;
-import com.hfing.ticketflowapi.event.dto.CreateTicketTypeRequest;
-import com.hfing.ticketflowapi.event.dto.EventResponse;
-import com.hfing.ticketflowapi.event.dto.EventShowResponse;
-import com.hfing.ticketflowapi.event.dto.TicketTypeResponse;
-import com.hfing.ticketflowapi.event.dto.UpdateEventRequest;
+import com.hfing.ticketflowapi.event.dto.request.CreateEventRequest;
+import com.hfing.ticketflowapi.event.dto.request.CreateEventShowRequest;
+import com.hfing.ticketflowapi.event.dto.request.CreateTicketTypeRequest;
+import com.hfing.ticketflowapi.event.dto.response.EventResponse;
+import com.hfing.ticketflowapi.event.dto.response.EventShowResponse;
+import com.hfing.ticketflowapi.event.dto.response.PublicEventResponse;
+import com.hfing.ticketflowapi.event.dto.response.PublicEventSummaryResponse;
+import com.hfing.ticketflowapi.event.dto.response.TicketTypeResponse;
+import com.hfing.ticketflowapi.event.dto.request.UpdateEventRequest;
 import java.util.List;
 
 public interface EventService {
 
     EventResponse createEvent(CreateEventRequest request);
 
-    List<EventResponse> getPublishedUpcomingEvents();
+    List<PublicEventSummaryResponse> getPublishedUpcomingEvents();
 
     List<EventResponse> getAllEventsForAdmin();
 
     EventResponse getAdminEventById(String id);
 
-    EventResponse getPublicEventById(String id);
+    PublicEventResponse getPublicEventById(String id);
 
     EventResponse updateEvent(String id, UpdateEventRequest request, String currentUserId, String role);
 
@@ -39,4 +41,6 @@ public interface EventService {
     EventResponse approveEvent(String eventId);
 
     EventResponse rejectEvent(String eventId);
+
+    EventResponse setHotEvent(String eventId, boolean isHot);
 }

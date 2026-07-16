@@ -2,10 +2,20 @@ package com.hfing.ticketflowapi.event.service.impl;
 
 import com.hfing.ticketflowapi.common.exception.AppException;
 import com.hfing.ticketflowapi.common.exception.ErrorCode;
-import com.hfing.ticketflowapi.event.dto.*;
+import com.hfing.ticketflowapi.event.dto.request.CreateEventRequest;
+import com.hfing.ticketflowapi.event.dto.request.CreateEventShowRequest;
+import com.hfing.ticketflowapi.event.dto.request.CreateTicketTypeRequest;
+import com.hfing.ticketflowapi.event.dto.request.UpdateEventRequest;
+import com.hfing.ticketflowapi.event.dto.response.EventResponse;
+import com.hfing.ticketflowapi.event.dto.response.EventShowResponse;
+import com.hfing.ticketflowapi.event.dto.response.PublicEventResponse;
+import com.hfing.ticketflowapi.event.dto.response.PublicEventShowResponse;
+import com.hfing.ticketflowapi.event.dto.response.PublicEventSummaryResponse;
+import com.hfing.ticketflowapi.event.dto.response.TicketTypeResponse;
 import com.hfing.ticketflowapi.event.entity.Event;
 import com.hfing.ticketflowapi.event.entity.EventShow;
 import com.hfing.ticketflowapi.event.entity.TicketType;
+import com.hfing.ticketflowapi.event.enums.EventShowSaleStatus;
 import com.hfing.ticketflowapi.event.enums.EventShowStatus;
 import com.hfing.ticketflowapi.event.enums.EventStatus;
 import com.hfing.ticketflowapi.event.enums.TicketTypeStatus;
@@ -20,8 +30,12 @@ import com.hfing.ticketflowapi.user.entity.User;
 import com.hfing.ticketflowapi.user.enums.RoleType;
 import com.hfing.ticketflowapi.user.repository.UserRepository;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
@@ -137,7 +151,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public EventShowResponse createShow(String eventId, CreateEventShowRequest request, String currentUserId,
-            String role) {
+                                        String role) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
 
@@ -148,7 +162,7 @@ public class EventServiceImpl implements EventService {
                 .endTime(request.endTime())
                 .saleStartTime(request.saleStartTime())
                 .saleEndTime(request.saleEndTime())
-                .status(EventShowStatus.SCHEDULED)
+                .status(EventShowStatus.COMING_SOON)
                 .event(event)
                 .build();
 
@@ -164,7 +178,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public TicketTypeResponse createTicketType(String showId, CreateTicketTypeRequest request, String currentUserId,
-            String role) {
+                                               String role) {
         EventShow show = eventShowRepository.findById(showId)
                 .orElseThrow(() -> new AppException(ErrorCode.SHOW_NOT_FOUND));
 
@@ -299,6 +313,20 @@ public class EventServiceImpl implements EventService {
         return eventMapper.toEventResponse(saved);
     }
 
+    @Override
+    @Transactional
+    public EventResponse setHotEvent(String eventId, boolean isHot) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
+
+        event.setIsHot(isHot);
+        Event saved = eventRepository.save(event);
+
+        evictEventDetailCache(eventId);
+
+        return eventMapper.toEventResponse(saved);
+    }
+
     private void evictEventDetailCache(String eventId) {
         var adminDetailCache = cacheManager.getCache("adminEventDetail");
         if (adminDetailCache != null) {
@@ -315,18 +343,21 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @Cacheable(value = "eventsList", key = "'published-upcoming'")
-    public List<EventResponse> getPublishedUpcomingEvents() {
+    public List<PublicEventSummaryResponse> getPublishedUpcomingEvents() {
+        LocalDateTime now = LocalDateTime.now();
         return eventRepository
                 .findPublishedEventsWithUpcomingShows(
                         EventStatus.PUBLISHED,
-                        LocalDateTime.now())
+                        now)
                 .stream()
-                .map(eventMapper::toEventResponse)
+                .map(event -> toPublicEventSummaryResponse(event, now))
                 .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     @Cacheable(value = "eventsList", key = "'admin-all'")
     public List<EventResponse> getAllEventsForAdmin() {
         return eventRepository
@@ -337,6 +368,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @Cacheable(value = "adminEventDetail", key = "#id")
     public EventResponse getAdminEventById(String id) {
         Event event = eventRepository.findById(id)
@@ -346,13 +378,89 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @Cacheable(value = "publicEventDetail", key = "#id")
-    public EventResponse getPublicEventById(String id) {
+    public PublicEventResponse getPublicEventById(String id) {
         Event event = eventRepository
                 .findByIdAndStatusPublished(id)
                 .orElseThrow(() -> new AppException(ErrorCode.EVENT_NOT_FOUND));
 
-        return eventMapper.toEventResponse(event);
+        return toPublicEventResponse(event);
+    }
+
+    private PublicEventResponse toPublicEventResponse(Event event) {
+        return eventMapper.toPublicEventResponse(
+                event,
+                getOrganizerName(event.getOrganizer()),
+                getMinPrice(event),
+                event.getShows().stream()
+                        .map(this::toPublicEventShowResponse)
+                        .toList());
+    }
+
+    private PublicEventSummaryResponse toPublicEventSummaryResponse(Event event, LocalDateTime now) {
+        return eventMapper.toPublicEventSummaryResponse(
+                event,
+                getOrganizerName(event.getOrganizer()),
+                getMinPrice(event),
+                getNearestUpcomingShowDay(event, now));
+    }
+
+    private PublicEventShowResponse toPublicEventShowResponse(EventShow show) {
+        return eventShowMapper.toPublicEventShowResponse(
+                show,
+                getSaleStatus(show, LocalDateTime.now()),
+                show.getTicketTypes().stream()
+                        .map(ticketTypeMapper::toPublicTicketTypeResponse)
+                        .toList());
+    }
+
+    private BigDecimal getMinPrice(Event event) {
+        return event.getShows().stream()
+                .flatMap(show -> show.getTicketTypes().stream())
+                .filter(ticketType -> ticketType.getStatus() == TicketTypeStatus.ACTIVE)
+                .map(TicketType::getPrice)
+                .filter(Objects::nonNull)
+                .min(Comparator.naturalOrder())
+                .orElse(null);
+    }
+
+    private Instant getNearestUpcomingShowDay(Event event, LocalDateTime now) {
+        return event.getShows().stream()
+                .map(EventShow::getStartTime)
+                .filter(Objects::nonNull)
+                .filter(startTime -> startTime.isAfter(now))
+                .min(Comparator.naturalOrder())
+                .map(startTime -> startTime.atZone(ZoneId.systemDefault()).toInstant())
+                .orElse(null);
+    }
+
+    private String getOrganizerName(User organizer) {
+        String fullName = List.of(organizer.getFirstName(), organizer.getLastName())
+                .stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(name -> !name.isEmpty())
+                .reduce((first, second) -> first + " " + second)
+                .orElse(null);
+
+        return fullName != null ? fullName : organizer.getEmail();
+    }
+
+    private EventShowSaleStatus getSaleStatus(EventShow show, LocalDateTime now) {
+        if (show.getStatus() == EventShowStatus.CANCELLED) {
+            return EventShowSaleStatus.CANCELLED;
+        }
+        if (show.getStatus() == EventShowStatus.COMPLETED || now.isAfter(show.getEndTime())) {
+            return EventShowSaleStatus.COMPLETED;
+        }
+        if (now.isBefore(show.getSaleStartTime())) {
+            return EventShowSaleStatus.COMING_SOON;
+        }
+        if (show.getSaleEndTime() != null && now.isAfter(show.getSaleEndTime())) {
+            return EventShowSaleStatus.ENDED;
+        }
+        return EventShowSaleStatus.ON_SALE;
     }
 
 }

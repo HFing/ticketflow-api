@@ -1,7 +1,7 @@
 package com.hfing.ticketflowapi.event.controller;
 
 import com.hfing.ticketflowapi.common.response.ApiResponse;
-import com.hfing.ticketflowapi.event.dto.EventResponse;
+import com.hfing.ticketflowapi.event.dto.response.EventResponse;
 import com.hfing.ticketflowapi.event.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -55,6 +55,18 @@ public class AdminEventController {
         return ApiResponse.<EventResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Event rejected successfully")
+                .data(data)
+                .build();
+    }
+
+    @PatchMapping("/{eventId}/hot")
+    public ApiResponse<EventResponse> setHotEvent(
+            @PathVariable String eventId,
+            @RequestParam boolean isHot) {
+        var data = eventService.setHotEvent(eventId, isHot);
+        return ApiResponse.<EventResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message(isHot ? "Event marked as hot successfully" : "Event unmarked as hot successfully")
                 .data(data)
                 .build();
     }

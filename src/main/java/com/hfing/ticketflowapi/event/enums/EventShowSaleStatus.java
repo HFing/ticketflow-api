@@ -1,6 +1,6 @@
 package com.hfing.ticketflowapi.event.enums;
 
-public enum EventShowStatus {
+public enum EventShowSaleStatus {
     COMING_SOON,
     ON_SALE,
     ENDED,
