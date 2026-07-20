@@ -57,6 +57,7 @@ public class EventShow extends BaseEntity {
 
         return status != EventShowStatus.CANCELLED
                 && status != EventShowStatus.COMPLETED
+                && status != EventShowStatus.ENDED
                 && afterSaleStart
                 && beforeSaleEnd;
     }
