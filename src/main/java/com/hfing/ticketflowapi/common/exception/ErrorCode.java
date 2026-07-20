@@ -38,6 +38,16 @@ public enum ErrorCode {
     TICKET_INVALID_QUANTITY(400, "Ticket total quantity must be greater than 0", HttpStatus.BAD_REQUEST),
     TICKET_INVALID_MAX_PER_ORDER(400, "Ticket max per order must be greater than 0 and less than or equal to total quantity", HttpStatus.BAD_REQUEST),
     SHOW_NOT_FOUND(404, "Event show not found", HttpStatus.NOT_FOUND),
+
+    EVENT_NOT_PUBLISHED(400, "Event is not published", HttpStatus.BAD_REQUEST),
+    SHOW_NOT_ON_SALE(400, "Event show is not currently on sale", HttpStatus.BAD_REQUEST),
+    TICKET_TYPE_NOT_FOUND(404, "Ticket type not found", HttpStatus.NOT_FOUND),
+    TICKET_TYPE_NOT_IN_SHOW(400, "Ticket type does not belong to the selected event show", HttpStatus.BAD_REQUEST),
+    TICKET_TYPE_NOT_AVAILABLE(400, "Ticket type is not available", HttpStatus.BAD_REQUEST),
+    TICKET_QUANTITY_EXCEEDED(400, "Requested quantity exceeds the maximum allowed per order", HttpStatus.BAD_REQUEST),
+    INSUFFICIENT_TICKET_QUANTITY(409, "Not enough tickets available", HttpStatus.CONFLICT),
+    DUPLICATE_TICKET_TYPE(400, "A ticket type must appear only once in checkout items", HttpStatus.BAD_REQUEST),
+    BOOKING_NOT_FOUND(404, "Booking not found", HttpStatus.NOT_FOUND),
     ;
 
     private final int code;
