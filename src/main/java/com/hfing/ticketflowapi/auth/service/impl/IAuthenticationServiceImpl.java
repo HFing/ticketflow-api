@@ -1,7 +1,7 @@
 package com.hfing.ticketflowapi.auth.service.impl;
 
 import static com.hfing.ticketflowapi.auth.constant.JWTConstant.TOKEN_TYPE;
-import static com.hfing.ticketflowapi.auth.service.RedisTokenService.ACCESS_TOKEN_BLACKLIST_PREFIX;
+import static com.hfing.ticketflowapi.auth.service.IRedisTokenService.ACCESS_TOKEN_BLACKLIST_PREFIX;
 
 import com.hfing.ticketflowapi.auth.dto.LoginRequest;
 import com.hfing.ticketflowapi.auth.dto.LoginResponse;
@@ -9,9 +9,9 @@ import com.hfing.ticketflowapi.auth.dto.LoginResult;
 import com.hfing.ticketflowapi.auth.dto.TokenDetails;
 import com.hfing.ticketflowapi.auth.entity.RedisToken;
 import com.hfing.ticketflowapi.auth.enums.TokenType;
-import com.hfing.ticketflowapi.auth.service.AuthenticationService;
-import com.hfing.ticketflowapi.auth.service.JwtService;
-import com.hfing.ticketflowapi.auth.service.RedisTokenService;
+import com.hfing.ticketflowapi.auth.service.IAuthenticationService;
+import com.hfing.ticketflowapi.auth.service.IJwtService;
+import com.hfing.ticketflowapi.auth.service.IRedisTokenService;
 import com.hfing.ticketflowapi.common.exception.AppException;
 import com.hfing.ticketflowapi.common.exception.ErrorCode;
 import com.hfing.ticketflowapi.user.entity.User;
@@ -32,12 +32,12 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class AuthenticationServiceImpl implements AuthenticationService {
+public class IAuthenticationServiceImpl implements IAuthenticationService {
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
-    private final JwtService jwtService;
-    private final RedisTokenService redisTokenService;
+    private final IJwtService jwtService;
+    private final IRedisTokenService redisTokenService;
 
     @Override
     public LoginResult login(LoginRequest request) {

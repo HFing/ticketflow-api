@@ -12,6 +12,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.context.request.WebRequest;
 
 
@@ -52,6 +53,14 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadableRequestBody(
+            HttpMessageNotReadableException exception, WebRequest request) {
+        ErrorResponse response = buildErrorCodeResponse(ErrorCode.REQUEST_BODY_REQUIRED, request);
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
     // validation in appservice

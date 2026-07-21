@@ -2,7 +2,7 @@ package com.hfing.ticketflowapi.notification.service.impl;
 
 import com.hfing.ticketflowapi.event.entity.Event;
 import com.hfing.ticketflowapi.notification.dto.UserRegisteredEvent;
-import com.hfing.ticketflowapi.notification.service.NotificationService;
+import com.hfing.ticketflowapi.notification.service.INotificationService;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j(topic = "NOTIFICATION-SERVICE")
-public class NotificationServiceImpl implements NotificationService {
+public class NotificationServiceImpl implements INotificationService {
 
     private final JavaMailSender mailSender;
 

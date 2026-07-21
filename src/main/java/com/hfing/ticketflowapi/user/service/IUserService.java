@@ -5,8 +5,7 @@ import com.hfing.ticketflowapi.user.dto.CreateUserResponse;
 import com.hfing.ticketflowapi.user.dto.UpdateUserRequest;
 import com.hfing.ticketflowapi.user.dto.UserDetailResponse;
 
-
-public interface UserService {
+public interface IUserService {
     CreateUserResponse createUser(CreateUserRequest request);
 
     UserDetailResponse myInfo(String userId);

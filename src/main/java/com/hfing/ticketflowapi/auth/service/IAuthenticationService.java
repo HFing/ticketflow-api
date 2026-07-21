@@ -8,7 +8,7 @@ import java.text.ParseException;
 
 
 
-public interface AuthenticationService {
+public interface IAuthenticationService {
     LoginResult login(LoginRequest request);
     LoginResponse refreshToken(String refreshToken );
     void logout(String refreshToken) throws ParseException, JOSEException;

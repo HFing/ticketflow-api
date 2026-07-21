@@ -4,7 +4,7 @@ import com.hfing.ticketflowapi.common.exception.AppException;
 import com.hfing.ticketflowapi.common.exception.ErrorCode;
 import com.hfing.ticketflowapi.common.exception.GlobalExceptionHandler;
 import com.hfing.ticketflowapi.user.entity.Role;
-import com.hfing.ticketflowapi.user.service.RoleService;
+import com.hfing.ticketflowapi.user.service.IRoleService;
 import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,11 +17,11 @@ import static org.mockito.Mockito.when;
 
 class RoleControllerRestAssuredTest {
 
-    private RoleService roleService;
+    private IRoleService roleService;
 
     @BeforeEach
     void setUp() {
-        roleService = mock(RoleService.class);
+        roleService = mock(IRoleService.class);
         RestAssuredMockMvc.standaloneSetup(
                 new RoleController(roleService),
                 new GlobalExceptionHandler()

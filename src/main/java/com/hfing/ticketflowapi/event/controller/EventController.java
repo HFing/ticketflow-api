@@ -3,7 +3,7 @@ package com.hfing.ticketflowapi.event.controller;
 import com.hfing.ticketflowapi.common.response.ApiResponse;
 import com.hfing.ticketflowapi.event.dto.response.PublicEventResponse;
 import com.hfing.ticketflowapi.event.dto.response.PublicEventSummaryResponse;
-import com.hfing.ticketflowapi.event.service.EventService;
+import com.hfing.ticketflowapi.event.service.IEventService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/events")
 public class EventController {
 
-    private final EventService eventService;
+    private final IEventService eventService;
 
     @GetMapping
     public ApiResponse<List<PublicEventSummaryResponse>> getEvents() {

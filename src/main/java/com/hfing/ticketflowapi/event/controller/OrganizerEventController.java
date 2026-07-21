@@ -1,6 +1,7 @@
 package com.hfing.ticketflowapi.event.controller;
 
 import com.hfing.ticketflowapi.common.response.ApiResponse;
+import com.hfing.ticketflowapi.common.validation.ControllerInputValidator;
 import com.hfing.ticketflowapi.event.dto.request.CreateEventRequest;
 import com.hfing.ticketflowapi.event.dto.request.CreateEventShowRequest;
 import com.hfing.ticketflowapi.event.dto.request.CreateTicketTypeRequest;
@@ -8,7 +9,7 @@ import com.hfing.ticketflowapi.event.dto.request.UpdateEventRequest;
 import com.hfing.ticketflowapi.event.dto.response.EventResponse;
 import com.hfing.ticketflowapi.event.dto.response.EventShowResponse;
 import com.hfing.ticketflowapi.event.dto.response.TicketTypeResponse;
-import com.hfing.ticketflowapi.event.service.EventService;
+import com.hfing.ticketflowapi.event.service.IEventService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,13 +24,13 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
 public class OrganizerEventController {
 
-        private final EventService eventService;
+        private final IEventService eventService;
 
         @PostMapping
         public ApiResponse<EventResponse> createEvent(
                         @RequestBody @Valid CreateEventRequest request) {
-
-                var data = eventService.createEvent(request);
+                var validatedRequest = ControllerInputValidator.requireRequestBody(request);
+                var data = eventService.createEvent(validatedRequest);
 
                 return ApiResponse.<EventResponse>builder()
                                 .code(HttpStatus.CREATED.value())
@@ -43,9 +44,10 @@ public class OrganizerEventController {
                         @PathVariable String id,
                         @RequestBody @Valid UpdateEventRequest request,
                         @AuthenticationPrincipal Jwt jwt) {
-                var userId = jwt.getSubject();
+                var userId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
+                var validatedRequest = ControllerInputValidator.requireRequestBody(request);
                 var role = jwt.getClaimAsString("roles");
-                var data = eventService.updateEvent(id, request, userId, role);
+                var data = eventService.updateEvent(id, validatedRequest, userId, role);
                 return ApiResponse.<EventResponse>builder()
                                 .code(HttpStatus.OK.value())
                                 .message("Event updated successfully")
@@ -57,7 +59,7 @@ public class OrganizerEventController {
         public ApiResponse<Void> deleteEvent(
                         @PathVariable String id,
                         @AuthenticationPrincipal Jwt jwt) {
-                var userId = jwt.getSubject();
+                var userId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
                 var role = jwt.getClaimAsString("roles");
                 eventService.deleteEvent(id, userId, role);
                 return ApiResponse.<Void>builder()
@@ -70,7 +72,7 @@ public class OrganizerEventController {
         public ApiResponse<EventResponse> cancelEvent(
                         @PathVariable String id,
                         @AuthenticationPrincipal Jwt jwt) {
-                var userId = jwt.getSubject();
+                var userId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
                 var role = jwt.getClaimAsString("roles");
                 var data = eventService.cancelEvent(id, userId, role);
                 return ApiResponse.<EventResponse>builder()
@@ -85,9 +87,10 @@ public class OrganizerEventController {
                         @PathVariable String eventId,
                         @RequestBody @Valid CreateEventShowRequest request,
                         @AuthenticationPrincipal Jwt jwt) {
-                var userId = jwt.getSubject();
+                var userId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
+                var validatedRequest = ControllerInputValidator.requireRequestBody(request);
                 var role = jwt.getClaimAsString("roles");
-                var data = eventService.createShow(eventId, request, userId, role);
+                var data = eventService.createShow(eventId, validatedRequest, userId, role);
                 return ApiResponse.<EventShowResponse>builder()
                                 .code(HttpStatus.CREATED.value())
                                 .message("Event show created successfully")
@@ -100,9 +103,10 @@ public class OrganizerEventController {
                         @PathVariable String showId,
                         @RequestBody @Valid CreateTicketTypeRequest request,
                         @AuthenticationPrincipal Jwt jwt) {
-                String userId = jwt.getSubject();
+                String userId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
+                var validatedRequest = ControllerInputValidator.requireRequestBody(request);
                 String role = jwt.getClaimAsString("roles");
-                var data = eventService.createTicketType(showId, request, userId, role);
+                var data = eventService.createTicketType(showId, validatedRequest, userId, role);
                 return ApiResponse.<TicketTypeResponse>builder()
                                 .code(HttpStatus.CREATED.value())
                                 .message("Ticket type created successfully")
@@ -114,7 +118,7 @@ public class OrganizerEventController {
         public ApiResponse<EventResponse> submitReview(
                         @PathVariable String eventId,
                         @AuthenticationPrincipal Jwt jwt) {
-                var userId = jwt.getSubject();
+                var userId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
                 var role = jwt.getClaimAsString("roles");
                 var data = eventService.submitForReview(eventId, userId, role);
                 return ApiResponse.<EventResponse>builder()

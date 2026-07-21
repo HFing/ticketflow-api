@@ -6,7 +6,7 @@ import static com.hfing.ticketflowapi.auth.constant.JWTConstant.TOKEN_TYPE;
 
 import com.hfing.ticketflowapi.auth.dto.TokenDetails;
 import com.hfing.ticketflowapi.auth.enums.TokenType;
-import com.hfing.ticketflowapi.auth.service.JwtService;
+import com.hfing.ticketflowapi.auth.service.IJwtService;
 import com.hfing.ticketflowapi.common.exception.AppException;
 import com.hfing.ticketflowapi.common.exception.ErrorCode;
 import com.nimbusds.jose.JOSEException;
@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-public class JwtServiceImpl implements JwtService {
+public class JwtServiceImpl implements IJwtService {
 
     @Value("${jwt.secret-key}")
     private String secretKey;

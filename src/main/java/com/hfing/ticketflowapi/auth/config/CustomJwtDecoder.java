@@ -1,10 +1,10 @@
 package com.hfing.ticketflowapi.auth.config;
 
 import static com.hfing.ticketflowapi.auth.constant.JWTConstant.TOKEN_TYPE;
-import static com.hfing.ticketflowapi.auth.service.RedisTokenService.ACCESS_TOKEN_BLACKLIST_PREFIX;
+import static com.hfing.ticketflowapi.auth.service.IRedisTokenService.ACCESS_TOKEN_BLACKLIST_PREFIX;
 
 import com.hfing.ticketflowapi.auth.enums.TokenType;
-import com.hfing.ticketflowapi.auth.service.RedisTokenService;
+import com.hfing.ticketflowapi.auth.service.IRedisTokenService;
 import jakarta.annotation.PostConstruct;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CustomJwtDecoder implements JwtDecoder {
 
-    private final RedisTokenService redisTokenService;
+    private final IRedisTokenService redisTokenService;
 
     @Value("${jwt.secret-key}")
     private String secretKey;

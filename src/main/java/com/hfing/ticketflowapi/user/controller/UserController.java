@@ -1,12 +1,13 @@
 package com.hfing.ticketflowapi.user.controller;
 
 import com.hfing.ticketflowapi.common.response.ApiResponse;
+import com.hfing.ticketflowapi.common.validation.ControllerInputValidator;
 import com.hfing.ticketflowapi.user.dto.CreateUserRequest;
 import com.hfing.ticketflowapi.user.dto.CreateUserResponse;
 import com.hfing.ticketflowapi.user.dto.UpdateUserRequest;
 import com.hfing.ticketflowapi.user.dto.UserDetailResponse;
 import com.hfing.ticketflowapi.user.entity.User;
-import com.hfing.ticketflowapi.user.service.UserService;
+import com.hfing.ticketflowapi.user.service.IUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,11 +20,12 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
 public class UserController {
-    private final UserService userService;
+    private final IUserService userService;
 
     @PostMapping
     ApiResponse<CreateUserResponse> createUser(@RequestBody @Valid CreateUserRequest request) {
-        var data = userService.createUser(request);
+        var validatedRequest = ControllerInputValidator.requireRequestBody(request);
+        var data = userService.createUser(validatedRequest);
         return ApiResponse.<CreateUserResponse>builder()
                 .code(HttpStatus.CREATED.value())
                 .message("User created successfully")
@@ -33,7 +35,7 @@ public class UserController {
 
     @GetMapping("/me")
     ApiResponse<UserDetailResponse> getMyInfo (@AuthenticationPrincipal Jwt jwt){
-        var userId = jwt.getSubject();
+        var userId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
         var data = userService.myInfo(userId);
         return ApiResponse.<UserDetailResponse>builder()
                 .code(HttpStatus.OK.value())
@@ -47,8 +49,9 @@ public class UserController {
             @RequestBody @Valid UpdateUserRequest request,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        var userId = jwt.getSubject();
-        var data = userService.updateUser(userId, request);
+        var userId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
+        var validatedRequest = ControllerInputValidator.requireRequestBody(request);
+        var data = userService.updateUser(userId, validatedRequest);
         return ApiResponse.<UserDetailResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("User info updated successfully")

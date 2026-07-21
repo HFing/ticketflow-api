@@ -11,7 +11,7 @@ import com.hfing.ticketflowapi.event.dto.response.TicketTypeResponse;
 import com.hfing.ticketflowapi.event.dto.request.UpdateEventRequest;
 import java.util.List;
 
-public interface EventService {
+public interface IEventService {
 
     EventResponse createEvent(CreateEventRequest request);
 

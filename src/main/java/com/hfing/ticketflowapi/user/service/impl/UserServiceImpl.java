@@ -12,8 +12,8 @@ import com.hfing.ticketflowapi.user.entity.User;
 import com.hfing.ticketflowapi.user.enums.RoleType;
 import com.hfing.ticketflowapi.user.mapper.UserMapper;
 import com.hfing.ticketflowapi.user.repository.UserRepository;
-import com.hfing.ticketflowapi.user.service.RoleService;
-import com.hfing.ticketflowapi.user.service.UserService;
+import com.hfing.ticketflowapi.user.service.IRoleService;
+import com.hfing.ticketflowapi.user.service.IUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -24,12 +24,12 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j(topic = "USER-SERVICE")
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl implements IUserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
-    private final RoleService roleService;
+    private final IRoleService roleService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override

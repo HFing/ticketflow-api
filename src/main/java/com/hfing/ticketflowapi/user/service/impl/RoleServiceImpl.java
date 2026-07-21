@@ -4,14 +4,14 @@ import com.hfing.ticketflowapi.common.exception.AppException;
 import com.hfing.ticketflowapi.common.exception.ErrorCode;
 import com.hfing.ticketflowapi.user.entity.Role;
 import com.hfing.ticketflowapi.user.repository.RoleRepository;
-import com.hfing.ticketflowapi.user.service.RoleService;
+import com.hfing.ticketflowapi.user.service.IRoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 
 @Service
 @RequiredArgsConstructor
-public class RoleServiceImpl implements RoleService {
+public class RoleServiceImpl implements IRoleService {
     private final RoleRepository roleRepository;
 
 

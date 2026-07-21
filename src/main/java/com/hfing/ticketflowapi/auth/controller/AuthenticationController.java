@@ -2,8 +2,9 @@ package com.hfing.ticketflowapi.auth.controller;
 
 import com.hfing.ticketflowapi.auth.dto.LoginRequest;
 import com.hfing.ticketflowapi.auth.dto.LoginResponse;
-import com.hfing.ticketflowapi.auth.service.AuthenticationService;
+import com.hfing.ticketflowapi.auth.service.IAuthenticationService;
 import com.hfing.ticketflowapi.common.response.ApiResponse;
+import com.hfing.ticketflowapi.common.validation.ControllerInputValidator;
 import com.nimbusds.jose.JOSEException;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.Cookie;
@@ -18,18 +19,21 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
 public class AuthenticationController {
-        private final AuthenticationService authenticationService;
+        private static final int REFRESH_TOKEN_COOKIE_MAX_AGE_SECONDS = 14 * 24 * 60 * 60;
+
+        private final IAuthenticationService IAuthenticationService;
 
         @Operation(summary = "Login", description = "Authenticate user and return access token and refresh token")
         @PostMapping("/login")
         ApiResponse<LoginResponse> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
-                var loginResult = authenticationService.login(request);
+                var validatedRequest = ControllerInputValidator.requireRequestBody(request);
+                var loginResult = IAuthenticationService.login(validatedRequest);
 
                 Cookie cookie = new Cookie("refresh_token", loginResult.refreshToken());
                 cookie.setHttpOnly(true); // Prevents JavaScript from accessing the cookie (XSS protection)
                 cookie.setSecure(false); // Change to true in production
                 cookie.setPath("/"); // Cookie is accessible across all paths in the app
-                cookie.setMaxAge(14 * 24 * 60 * 60); // Cookie expiry: 14 days — matches refresh token TTL
+                cookie.setMaxAge(REFRESH_TOKEN_COOKIE_MAX_AGE_SECONDS); // Cookie expiry: 14 days — matches refresh token TTL
                 response.addCookie(cookie);
 
                 var data = LoginResponse.builder()
@@ -46,7 +50,7 @@ public class AuthenticationController {
 
         @PostMapping("/refresh-token")
         ApiResponse<LoginResponse> refreshToken(@CookieValue("refresh_token") String refreshToken) {
-                var data = authenticationService.refreshToken(refreshToken);
+                var data = IAuthenticationService.refreshToken(refreshToken);
                 return ApiResponse.<LoginResponse>builder()
                                 .code(HttpStatus.OK.value())
                                 .message("Token refreshed successfully")
@@ -59,7 +63,7 @@ public class AuthenticationController {
                         @CookieValue("refresh_token") String refreshToken,
                         HttpServletResponse response) throws ParseException, JOSEException {
                 // 1. Gọi service để thu hồi tokens
-                authenticationService.logout(refreshToken);
+                IAuthenticationService.logout(refreshToken);
 
                 // 2. Xóa refresh token cookie
                 // Set value = "" và maxAge = 0 để browser xóa cookie

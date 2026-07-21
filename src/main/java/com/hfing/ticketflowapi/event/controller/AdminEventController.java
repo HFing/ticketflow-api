@@ -2,7 +2,7 @@ package com.hfing.ticketflowapi.event.controller;
 
 import com.hfing.ticketflowapi.common.response.ApiResponse;
 import com.hfing.ticketflowapi.event.dto.response.EventResponse;
-import com.hfing.ticketflowapi.event.service.EventService;
+import com.hfing.ticketflowapi.event.service.IEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,7 +16,7 @@ import java.util.List;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminEventController {
 
-    private final EventService eventService;
+    private final IEventService eventService;
 
     @GetMapping("/pending")
     public ApiResponse<List<EventResponse>> getPendingEvents() {
