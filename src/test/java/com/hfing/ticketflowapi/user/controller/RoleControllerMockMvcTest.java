@@ -4,7 +4,7 @@ import com.hfing.ticketflowapi.common.exception.AppException;
 import com.hfing.ticketflowapi.common.exception.ErrorCode;
 import com.hfing.ticketflowapi.common.exception.GlobalExceptionHandler;
 import com.hfing.ticketflowapi.user.entity.Role;
-import com.hfing.ticketflowapi.user.service.RoleService;
+import com.hfing.ticketflowapi.user.service.IRoleService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -22,11 +22,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RoleControllerMockMvcTest {
 
     private MockMvc mockMvc;
-    private RoleService roleService;
+    private IRoleService roleService;
 
     @BeforeEach
     void setUp() {
-        roleService = mock(RoleService.class);
+        roleService = mock(IRoleService.class);
         mockMvc = MockMvcBuilders.standaloneSetup(new RoleController(roleService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();

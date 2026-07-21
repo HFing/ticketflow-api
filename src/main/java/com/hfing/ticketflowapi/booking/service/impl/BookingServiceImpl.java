@@ -5,6 +5,7 @@ import com.hfing.ticketflowapi.booking.dto.request.CheckoutRequest;
 import com.hfing.ticketflowapi.booking.dto.response.BookingDetailResponse;
 import com.hfing.ticketflowapi.booking.dto.response.BookingSummaryResponse;
 import com.hfing.ticketflowapi.booking.dto.response.CheckoutResponse;
+import com.hfing.ticketflowapi.booking.dto.response.PaymentResponse;
 import com.hfing.ticketflowapi.booking.entity.Booking;
 import com.hfing.ticketflowapi.booking.entity.BookingItem;
 import com.hfing.ticketflowapi.booking.entity.Payment;
@@ -16,7 +17,7 @@ import com.hfing.ticketflowapi.booking.enums.TicketStatus;
 import com.hfing.ticketflowapi.booking.mapper.BookingMapper;
 import com.hfing.ticketflowapi.booking.repository.BookingRepository;
 import com.hfing.ticketflowapi.booking.repository.PaymentRepository;
-import com.hfing.ticketflowapi.booking.service.BookingService;
+import com.hfing.ticketflowapi.booking.service.IBookingService;
 import com.hfing.ticketflowapi.common.exception.AppException;
 import com.hfing.ticketflowapi.common.exception.ErrorCode;
 import com.hfing.ticketflowapi.event.entity.EventShow;
@@ -42,7 +43,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class BookingServiceImpl implements BookingService {
+public class BookingServiceImpl implements IBookingService {
     private final UserRepository userRepository;
     private final EventShowRepository eventShowRepository;
     private final TicketTypeRepository ticketTypeRepository;
@@ -94,7 +95,7 @@ public class BookingServiceImpl implements BookingService {
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (CheckoutItemRequest requestedItem : request.items()) {
             TicketType ticketType = ticketTypesById.get(requestedItem.ticketTypeId());
-            validateTicketType(eventShow, ticketType, requestedItem.quantity());
+            validateTicketTypeOrThrow(eventShow, ticketType, requestedItem.quantity());
 
             BigDecimal subtotal = ticketType.getPrice().multiply(BigDecimal.valueOf(requestedItem.quantity()));
             BookingItem bookingItem = BookingItem.builder()
@@ -139,9 +140,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional(readOnly = true)
     public List<BookingSummaryResponse> getMyBookings(String customerId) {
-        return bookingRepository.findAllByCustomerIdOrderByCreatedAtDesc(customerId).stream()
-                .map(bookingMapper::toBookingSummaryResponse)
-                .toList();
+        return bookingRepository.findSummariesByCustomerId(customerId);
     }
 
     @Override
@@ -149,13 +148,13 @@ public class BookingServiceImpl implements BookingService {
     public BookingDetailResponse getMyBookingDetail(String customerId, String bookingId) {
         Booking booking = bookingRepository.findByIdAndCustomerId(bookingId, customerId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        Payment payment = paymentRepository.findByBookingId(bookingId)
+        PaymentResponse payment = paymentRepository.findResponseByBookingId(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
         return bookingMapper.toBookingDetailResponse(booking, payment);
     }
 
-    private void validateTicketType(EventShow eventShow, TicketType ticketType, int quantity) {
+    private void validateTicketTypeOrThrow(EventShow eventShow, TicketType ticketType, int quantity) {
         if (!ticketType.getEventShow().getId().equals(eventShow.getId())) {
             throw new AppException(ErrorCode.TICKET_TYPE_NOT_IN_SHOW);
         }

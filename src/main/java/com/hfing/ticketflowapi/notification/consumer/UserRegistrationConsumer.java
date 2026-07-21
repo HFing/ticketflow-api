@@ -1,7 +1,7 @@
 package com.hfing.ticketflowapi.notification.consumer;
 
 import com.hfing.ticketflowapi.notification.dto.UserRegisteredEvent;
-import com.hfing.ticketflowapi.notification.service.NotificationService;
+import com.hfing.ticketflowapi.notification.service.INotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Slf4j(topic = "USER-REGISTRATION-CONSUMER")
 public class UserRegistrationConsumer {
 
-    private final NotificationService notificationService;
+    private final INotificationService notificationService;
 
     @KafkaListener(topics = "user-registration", groupId = "ticketflow-mail-group")
     public void consume(UserRegisteredEvent event) {

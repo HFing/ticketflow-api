@@ -7,7 +7,7 @@ import com.hfing.ticketflowapi.booking.dto.response.BookingSummaryResponse;
 
 import java.util.List;
 
-public interface BookingService {
+public interface IBookingService {
     CheckoutResponse checkout(String customerId, CheckoutRequest request);
 
     List<BookingSummaryResponse> getMyBookings(String customerId);

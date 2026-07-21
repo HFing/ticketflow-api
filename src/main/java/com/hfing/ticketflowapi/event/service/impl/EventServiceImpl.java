@@ -25,7 +25,7 @@ import com.hfing.ticketflowapi.event.mapper.TicketTypeMapper;
 import com.hfing.ticketflowapi.event.repository.EventRepository;
 import com.hfing.ticketflowapi.event.repository.EventShowRepository;
 import com.hfing.ticketflowapi.event.repository.TicketTypeRepository;
-import com.hfing.ticketflowapi.event.service.EventService;
+import com.hfing.ticketflowapi.event.service.IEventService;
 import com.hfing.ticketflowapi.user.entity.User;
 import com.hfing.ticketflowapi.user.enums.RoleType;
 import com.hfing.ticketflowapi.user.repository.UserRepository;
@@ -48,7 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class EventServiceImpl implements EventService {
+public class EventServiceImpl implements IEventService {
 
     private final EventRepository eventRepository;
     private final UserRepository userRepository;

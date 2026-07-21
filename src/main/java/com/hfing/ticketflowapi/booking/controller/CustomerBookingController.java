@@ -4,8 +4,9 @@ import com.hfing.ticketflowapi.booking.dto.request.CheckoutRequest;
 import com.hfing.ticketflowapi.booking.dto.response.CheckoutResponse;
 import com.hfing.ticketflowapi.booking.dto.response.BookingDetailResponse;
 import com.hfing.ticketflowapi.booking.dto.response.BookingSummaryResponse;
-import com.hfing.ticketflowapi.booking.service.BookingService;
+import com.hfing.ticketflowapi.booking.service.IBookingService;
 import com.hfing.ticketflowapi.common.response.ApiResponse;
+import com.hfing.ticketflowapi.common.validation.ControllerInputValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -25,15 +25,16 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/customer/bookings")
 public class CustomerBookingController {
-    private final BookingService bookingService;
+    private final IBookingService bookingService;
 
     @PostMapping("/checkout")
-    @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<CheckoutResponse> checkout(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody CheckoutRequest request
     ) {
-        CheckoutResponse data = bookingService.checkout(jwt.getSubject(), request);
+        String customerId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
+        CheckoutRequest validatedRequest = ControllerInputValidator.requireRequestBody(request);
+        CheckoutResponse data = bookingService.checkout(customerId, validatedRequest);
         return ApiResponse.<CheckoutResponse>builder()
                 .code(HttpStatus.CREATED.value())
                 .message("Checkout completed successfully")
@@ -41,9 +42,10 @@ public class CustomerBookingController {
                 .build();
     }
 
-    @GetMapping("/my")
+    @GetMapping
     public ApiResponse<List<BookingSummaryResponse>> getMyBookings(@AuthenticationPrincipal Jwt jwt) {
-        List<BookingSummaryResponse> data = bookingService.getMyBookings(jwt.getSubject());
+        String customerId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
+        List<BookingSummaryResponse> data = bookingService.getMyBookings(customerId);
         return ApiResponse.<List<BookingSummaryResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Bookings retrieved successfully")
@@ -56,7 +58,8 @@ public class CustomerBookingController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String bookingId
     ) {
-        BookingDetailResponse data = bookingService.getMyBookingDetail(jwt.getSubject(), bookingId);
+        String customerId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
+        BookingDetailResponse data = bookingService.getMyBookingDetail(customerId, bookingId);
         return ApiResponse.<BookingDetailResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Booking retrieved successfully")

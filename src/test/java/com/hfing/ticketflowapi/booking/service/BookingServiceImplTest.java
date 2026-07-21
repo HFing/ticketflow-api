@@ -2,6 +2,8 @@ package com.hfing.ticketflowapi.booking.service;
 
 import com.hfing.ticketflowapi.booking.dto.request.CheckoutItemRequest;
 import com.hfing.ticketflowapi.booking.dto.request.CheckoutRequest;
+import com.hfing.ticketflowapi.booking.dto.response.BookingSummaryResponse;
+import com.hfing.ticketflowapi.booking.dto.response.PaymentResponse;
 import com.hfing.ticketflowapi.booking.entity.Booking;
 import com.hfing.ticketflowapi.booking.entity.Payment;
 import com.hfing.ticketflowapi.booking.enums.BookingStatus;
@@ -142,16 +144,17 @@ class BookingServiceImplTest {
 
     @Test
     void getMyBookings_returnsOnlyRepositoryResultsInSummaryForm() {
-        Booking booking = Booking.builder()
-                .id("booking-1")
-                .customer(customer)
-                .eventShow(eventShow)
-                .totalAmount(new BigDecimal("300.00"))
-                .status(BookingStatus.PAID)
-                .build();
-        booking.setCreatedAt(Instant.parse("2026-07-17T01:00:00Z"));
-        when(bookingRepository.findAllByCustomerIdOrderByCreatedAtDesc("customer-1"))
-                .thenReturn(List.of(booking));
+        BookingSummaryResponse summary = new BookingSummaryResponse(
+                "booking-1",
+                "Summer Concert",
+                "show-1",
+                eventShow.getStartTime(),
+                new BigDecimal("300.00"),
+                BookingStatus.PAID,
+                Instant.parse("2026-07-17T01:00:00Z")
+        );
+        when(bookingRepository.findSummariesByCustomerId("customer-1"))
+                .thenReturn(List.of(summary));
 
         var result = bookingService.getMyBookings("customer-1");
 
@@ -159,7 +162,7 @@ class BookingServiceImplTest {
         assertThat(result.getFirst().id()).isEqualTo("booking-1");
         assertThat(result.getFirst().eventName()).isEqualTo("Summer Concert");
         assertThat(result.getFirst().eventShowId()).isEqualTo("show-1");
-        assertThat(result.getFirst().createdAt()).isEqualTo(booking.getCreatedAt());
+        assertThat(result.getFirst().createdAt()).isEqualTo(summary.createdAt());
     }
 
     @Test
@@ -180,18 +183,17 @@ class BookingServiceImplTest {
                 .unitPrice(new BigDecimal("150.00"))
                 .subtotal(new BigDecimal("300.00"))
                 .build());
-        Payment payment = Payment.builder()
-                .id("payment-1")
-                .booking(booking)
-                .amount(new BigDecimal("300.00"))
-                .method(PaymentMethod.FAKE)
-                .status(PaymentStatus.SUCCESS)
-                .transactionCode("FAKE-1")
-                .paidAt(LocalDateTime.now())
-                .build();
+        PaymentResponse payment = new PaymentResponse(
+                "payment-1",
+                new BigDecimal("300.00"),
+                PaymentMethod.FAKE,
+                PaymentStatus.SUCCESS,
+                "FAKE-1",
+                LocalDateTime.now()
+        );
         when(bookingRepository.findByIdAndCustomerId("booking-1", "customer-1"))
                 .thenReturn(Optional.of(booking));
-        when(paymentRepository.findByBookingId("booking-1")).thenReturn(Optional.of(payment));
+        when(paymentRepository.findResponseByBookingId("booking-1")).thenReturn(Optional.of(payment));
 
         var result = bookingService.getMyBookingDetail("customer-1", "booking-1");
 
@@ -211,6 +213,6 @@ class BookingServiceImplTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.BOOKING_NOT_FOUND);
 
-        verify(paymentRepository, never()).findByBookingId(any());
+        verify(paymentRepository, never()).findResponseByBookingId(any());
     }
 }

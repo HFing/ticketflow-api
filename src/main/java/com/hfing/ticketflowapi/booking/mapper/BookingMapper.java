@@ -2,10 +2,10 @@ package com.hfing.ticketflowapi.booking.mapper;
 
 import com.hfing.ticketflowapi.booking.dto.response.BookingDetailResponse;
 import com.hfing.ticketflowapi.booking.dto.response.BookingItemResponse;
-import com.hfing.ticketflowapi.booking.dto.response.BookingSummaryResponse;
 import com.hfing.ticketflowapi.booking.dto.response.CheckoutResponse;
 import com.hfing.ticketflowapi.booking.dto.response.PaymentResponse;
 import com.hfing.ticketflowapi.booking.dto.response.TicketResponse;
+import com.hfing.ticketflowapi.booking.dto.response.OrganizerTicketResponse;
 import com.hfing.ticketflowapi.booking.entity.Booking;
 import com.hfing.ticketflowapi.booking.entity.BookingItem;
 import com.hfing.ticketflowapi.booking.entity.Payment;
@@ -20,11 +20,6 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 )
 public interface BookingMapper {
 
-    @Mapping(target = "eventName", source = "eventShow.event.name")
-    @Mapping(target = "eventShowId", source = "eventShow.id")
-    @Mapping(target = "showStartTime", source = "eventShow.startTime")
-    BookingSummaryResponse toBookingSummaryResponse(Booking booking);
-
     @Mapping(target = "eventName", source = "booking.eventShow.event.name")
     @Mapping(target = "location", source = "booking.eventShow.event.location")
     @Mapping(target = "showStartTime", source = "booking.eventShow.startTime")
@@ -35,7 +30,7 @@ public interface BookingMapper {
     @Mapping(target = "items", source = "booking.items")
     @Mapping(target = "createdAt", source = "booking.createdAt")
     @Mapping(target = "payment", source = "payment")
-    BookingDetailResponse toBookingDetailResponse(Booking booking, Payment payment);
+    BookingDetailResponse toBookingDetailResponse(Booking booking, PaymentResponse payment);
 
     @Mapping(target = "bookingId", source = "booking.id")
     @Mapping(target = "eventShowId", source = "booking.eventShow.id")
@@ -55,4 +50,11 @@ public interface BookingMapper {
     @Mapping(target = "ticketTypeId", source = "ticketType.id")
     @Mapping(target = "ticketTypeName", source = "ticketType.name")
     TicketResponse toTicketResponse(Ticket ticket);
+
+    @Mapping(target = "ticketTypeId", source = "ticketType.id")
+    @Mapping(target = "ticketTypeName", source = "ticketType.name")
+    @Mapping(target = "eventShowId", source = "booking.eventShow.id")
+    @Mapping(target = "customerId", source = "booking.customer.id")
+    @Mapping(target = "customerEmail", source = "booking.customer.email")
+    OrganizerTicketResponse toOrganizerTicketResponse(Ticket ticket);
 }

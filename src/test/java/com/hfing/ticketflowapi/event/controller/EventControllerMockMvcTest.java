@@ -3,7 +3,7 @@ package com.hfing.ticketflowapi.event.controller;
 import com.hfing.ticketflowapi.common.exception.GlobalExceptionHandler;
 import com.hfing.ticketflowapi.event.dto.response.PublicEventSummaryResponse;
 import com.hfing.ticketflowapi.event.enums.EventCategory;
-import com.hfing.ticketflowapi.event.service.EventService;
+import com.hfing.ticketflowapi.event.service.IEventService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -23,11 +23,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class EventControllerMockMvcTest {
 
     private MockMvc mockMvc;
-    private EventService eventService;
+    private IEventService eventService;
 
     @BeforeEach
     void setUp() {
-        eventService = mock(EventService.class);
+        eventService = mock(IEventService.class);
         mockMvc = MockMvcBuilders.standaloneSetup(new EventController(eventService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();

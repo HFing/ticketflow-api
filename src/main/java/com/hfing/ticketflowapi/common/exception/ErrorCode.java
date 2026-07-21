@@ -15,6 +15,7 @@ public enum ErrorCode {
     TOKEN_GENERATION_FAILED(500, "Failed to generate JWT token", HttpStatus.INTERNAL_SERVER_ERROR),
     TOKEN_EXPIRED(401, "JWT token has expired", HttpStatus.UNAUTHORIZED),
     TOKEN_INVALID(401, "Invalid JWT token", HttpStatus.UNAUTHORIZED),
+    REQUEST_BODY_REQUIRED(400, "Request body is required", HttpStatus.BAD_REQUEST),
 
     MISSING_LOGOUT_INFO(400, "Authorization header or refresh token is missing", HttpStatus.BAD_REQUEST),
 
@@ -48,6 +49,11 @@ public enum ErrorCode {
     INSUFFICIENT_TICKET_QUANTITY(409, "Not enough tickets available", HttpStatus.CONFLICT),
     DUPLICATE_TICKET_TYPE(400, "A ticket type must appear only once in checkout items", HttpStatus.BAD_REQUEST),
     BOOKING_NOT_FOUND(404, "Booking not found", HttpStatus.NOT_FOUND),
+    TICKET_NOT_FOUND(404, "Ticket not found", HttpStatus.NOT_FOUND),
+    TICKET_FORBIDDEN_ACCESS(403, "Ticket does not belong to your event", HttpStatus.FORBIDDEN),
+    TICKET_NOT_VALID(400, "Ticket is not valid for check-in", HttpStatus.BAD_REQUEST),
+    TICKET_ALREADY_USED(409, "Ticket has already been used", HttpStatus.CONFLICT),
+    SHOW_CANCELLED(400, "Event show has been cancelled", HttpStatus.BAD_REQUEST),
     ;
 
     private final int code;
