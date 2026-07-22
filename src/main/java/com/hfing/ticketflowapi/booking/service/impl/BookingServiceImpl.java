@@ -34,6 +34,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -209,8 +211,8 @@ public class BookingServiceImpl implements IBookingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingSummaryResponse> getMyBookings(String customerId) {
-        return bookingRepository.findSummariesByCustomerId(customerId);
+    public Page<BookingSummaryResponse> getMyBookings(String customerId, Pageable pageable) {
+        return bookingRepository.findSummariesByCustomerId(customerId, pageable);
     }
 
     @Override

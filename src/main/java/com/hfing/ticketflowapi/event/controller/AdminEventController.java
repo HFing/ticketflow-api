@@ -1,10 +1,13 @@
 package com.hfing.ticketflowapi.event.controller;
 
 import com.hfing.ticketflowapi.common.response.ApiResponse;
+import com.hfing.ticketflowapi.common.response.PageResponse;
 import com.hfing.ticketflowapi.event.dto.response.EventResponse;
 import com.hfing.ticketflowapi.event.service.IEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,9 +22,10 @@ public class AdminEventController {
     private final IEventService eventService;
 
     @GetMapping("/pending")
-    public ApiResponse<List<EventResponse>> getPendingEvents() {
-        var data = eventService.getPendingEvents();
-        return ApiResponse.<List<EventResponse>>builder()
+    public ApiResponse<PageResponse<EventResponse>> getPendingEvents(
+            @PageableDefault(size = 20) Pageable pageable) {
+        var data = PageResponse.from(eventService.getPendingEvents(pageable));
+        return ApiResponse.<PageResponse<EventResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Pending events retrieved successfully")
                 .data(data)

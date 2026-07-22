@@ -1,12 +1,14 @@
 package com.hfing.ticketflowapi.event.controller;
 
 import com.hfing.ticketflowapi.common.response.ApiResponse;
+import com.hfing.ticketflowapi.common.response.PageResponse;
 import com.hfing.ticketflowapi.event.dto.response.PublicEventResponse;
 import com.hfing.ticketflowapi.event.dto.response.PublicEventSummaryResponse;
 import com.hfing.ticketflowapi.event.service.IEventService;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,9 +22,10 @@ public class EventController {
     private final IEventService eventService;
 
     @GetMapping
-    public ApiResponse<List<PublicEventSummaryResponse>> getEvents() {
-        var data = eventService.getPublishedUpcomingEvents();
-        return ApiResponse.<List<PublicEventSummaryResponse>>builder()
+    public ApiResponse<PageResponse<PublicEventSummaryResponse>> getEvents(
+            @PageableDefault(size = 20) Pageable pageable) {
+        var data = PageResponse.from(eventService.getPublishedUpcomingEvents(pageable));
+        return ApiResponse.<PageResponse<PublicEventSummaryResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Events retrieved successfully")
                 .data(data)

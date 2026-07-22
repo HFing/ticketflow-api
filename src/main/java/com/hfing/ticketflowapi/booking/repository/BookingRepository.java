@@ -4,6 +4,7 @@ import com.hfing.ticketflowapi.booking.dto.response.BookingSummaryResponse;
 import com.hfing.ticketflowapi.booking.entity.Booking;
 import com.hfing.ticketflowapi.booking.enums.BookingStatus;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -28,7 +29,9 @@ public interface BookingRepository extends JpaRepository<Booking, String> {
             WHERE b.customer.id = :customerId
             ORDER BY b.createdAt DESC
             """)
-    List<BookingSummaryResponse> findSummariesByCustomerId(@Param("customerId") String customerId);
+    Page<BookingSummaryResponse> findSummariesByCustomerId(
+            @Param("customerId") String customerId,
+            Pageable pageable);
 
     @EntityGraph(attributePaths = {"eventShow", "eventShow.event", "items", "items.ticketType"})
     Optional<Booking> findByIdAndCustomerId(String id, String customerId);

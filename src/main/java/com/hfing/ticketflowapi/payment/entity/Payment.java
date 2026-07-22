@@ -10,7 +10,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
-@Table(name = "payments")
+@Table(name = "payments", uniqueConstraints = {
+        @UniqueConstraint(name = "uq_payments_booking_id", columnNames = "booking_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor

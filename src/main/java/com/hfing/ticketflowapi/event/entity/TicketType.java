@@ -11,6 +11,11 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "ticket_types", indexes = {
         @Index(name = "idx_ticket_types_event_show_id", columnList = "event_show_id")
+}, check = {
+        @CheckConstraint(
+                name = "chk_ticket_types_inventory",
+                constraint = "sold_quantity >= 0 AND held_quantity >= 0 "
+                        + "AND sold_quantity + held_quantity <= total_quantity")
 })
 @Getter
 @Setter
