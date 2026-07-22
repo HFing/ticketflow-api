@@ -32,6 +32,7 @@ import com.hfing.ticketflowapi.event.repository.TicketTypeRepository;
 import com.hfing.ticketflowapi.user.entity.User;
 import com.hfing.ticketflowapi.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +60,7 @@ public class PaymentTransactionService {
     private final PaymentMapper paymentMapper;
     private final PaymentProperties paymentProperties;
     private final Clock paymentClock;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public PaymentReservation reserve(
@@ -424,6 +426,7 @@ public class PaymentTransactionService {
         booking.setStatus(BookingStatus.CONFIRMED);
         payment.setStatus(PaymentStatus.PAID);
         payment.setPaidAt(paidAt);
+        applicationEventPublisher.publishEvent(paymentMapper.toPaymentCompletedEvent(payment));
     }
 
     private Map<String, TicketType> lockBookingTicketTypes(Booking booking) {

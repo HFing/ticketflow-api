@@ -1,6 +1,7 @@
 package com.hfing.ticketflowapi.notification.service.impl;
 
-import com.hfing.ticketflowapi.event.entity.Event;
+import com.hfing.ticketflowapi.notification.dto.PaidTicketInfo;
+import com.hfing.ticketflowapi.notification.dto.PaymentCompletedEvent;
 import com.hfing.ticketflowapi.notification.dto.UserRegisteredEvent;
 import com.hfing.ticketflowapi.notification.service.INotificationService;
 import jakarta.mail.internet.MimeMessage;
@@ -10,12 +11,19 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
+
+import java.text.NumberFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 
 @Service
 @RequiredArgsConstructor
 @Slf4j(topic = "NOTIFICATION-SERVICE")
 public class NotificationServiceImpl implements INotificationService {
+    private static final DateTimeFormatter SHOW_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private final JavaMailSender mailSender;
 
@@ -41,6 +49,97 @@ public class NotificationServiceImpl implements INotificationService {
         } catch (Exception e) {
             log.error("Failed to send registration email to {}", event.email(), e);
         }
+    }
+
+    @Override
+    public void sendPaymentConfirmationEmail(PaymentCompletedEvent event) {
+        log.info("Sending payment confirmation email for bookingId={} to {}",
+                event.bookingId(), event.customerEmail());
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
+
+            helper.setFrom(fromAddress);
+            helper.setTo(event.customerEmail());
+            helper.setSubject("TicketFlow - Payment successful for " + safe(event.eventName()));
+            helper.setText(buildPaymentConfirmationEmailHtml(event), true);
+
+            mailSender.send(mimeMessage);
+            log.info("Payment confirmation email sent for bookingId={}", event.bookingId());
+        } catch (Exception exception) {
+            log.error("Failed to send payment confirmation email for bookingId={}",
+                    event.bookingId(), exception);
+            throw new IllegalStateException("Unable to send payment confirmation email", exception);
+        }
+    }
+
+    private String buildPaymentConfirmationEmailHtml(PaymentCompletedEvent event) {
+        String customerName = (nullToEmpty(event.customerFirstName()) + " "
+                + nullToEmpty(event.customerLastName())).trim();
+        if (customerName.isBlank()) {
+            customerName = event.customerEmail();
+        }
+
+        String ticketRows = event.tickets().stream()
+                .map(this::buildTicketRow)
+                .reduce("", String::concat);
+        String formattedAmount = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
+                .format(event.totalAmount());
+        String location = String.join(" - ", java.util.stream.Stream
+                .of(event.eventVenue(), event.eventLocation())
+                .filter(value -> value != null && !value.isBlank())
+                .map(this::safe)
+                .toList());
+
+        return """
+                <!doctype html>
+                <html lang="en">
+                <head><meta charset="UTF-8"><title>Payment successful</title></head>
+                <body style="font-family:Arial,sans-serif;color:#1f2937;background:#f3f4f6;padding:24px">
+                    <div style="max-width:680px;margin:auto;background:white;padding:28px;border-radius:12px">
+                        <h1 style="color:#16a34a">Payment successful</h1>
+                        <p>Hello %s,</p>
+                        <p>Your payment has been confirmed and your tickets are ready.</p>
+                        <h2>%s</h2>
+                        <p><strong>Booking:</strong> %s</p>
+                        <p><strong>Show time:</strong> %s - %s</p>
+                        <p><strong>Location:</strong> %s</p>
+                        <p><strong>Amount paid:</strong> %s %s</p>
+                        <table style="border-collapse:collapse;margin-top:20px">
+                            <thead><tr><th style="padding:10px;border:1px solid #ddd">Ticket type</th><th style="padding:10px;border:1px solid #ddd">Ticket code</th></tr></thead>
+                            <tbody>%s</tbody>
+                        </table>
+                        <p style="margin-top:24px">Please keep these ticket codes and present them at check-in.</p>
+                    </div>
+                </body>
+                </html>
+                """.formatted(
+                safe(customerName),
+                safe(event.eventName()),
+                safe(event.bookingId()),
+                event.showStartTime().format(SHOW_TIME_FORMATTER),
+                event.showEndTime().format(SHOW_TIME_FORMATTER),
+                location,
+                safe(formattedAmount),
+                safe(event.currency()),
+                ticketRows);
+    }
+
+    private String buildTicketRow(PaidTicketInfo ticket) {
+        return """
+                <tr>
+                    <td style="padding:10px;border:1px solid #ddd">%s</td>
+                    <td style="padding:10px;border:1px solid #ddd;font-family:monospace">%s</td>
+                </tr>
+                """.formatted(safe(ticket.ticketTypeName()), safe(ticket.ticketCode()));
+    }
+
+    private String safe(String value) {
+        return HtmlUtils.htmlEscape(nullToEmpty(value));
+    }
+
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     private String buildWelcomeEmailHtml(String firstName, String lastName) {

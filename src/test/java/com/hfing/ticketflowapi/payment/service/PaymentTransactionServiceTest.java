@@ -26,12 +26,14 @@ import com.hfing.ticketflowapi.event.repository.EventShowRepository;
 import com.hfing.ticketflowapi.event.repository.TicketTypeRepository;
 import com.hfing.ticketflowapi.user.entity.User;
 import com.hfing.ticketflowapi.user.repository.UserRepository;
+import com.hfing.ticketflowapi.notification.dto.PaymentCompletedEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -59,6 +61,7 @@ class PaymentTransactionServiceTest {
     @Mock private TicketTypeRepository ticketTypeRepository;
     @Mock private BookingRepository bookingRepository;
     @Mock private PaymentRepository paymentRepository;
+    @Mock private ApplicationEventPublisher applicationEventPublisher;
 
     private PaymentTransactionService service;
     private User customer;
@@ -85,11 +88,20 @@ class PaymentTransactionServiceTest {
                 paymentRepository,
                 mapper,
                 properties,
-                clock);
+                clock,
+                applicationEventPublisher);
 
-        customer = User.builder().id("customer-1").build();
+        customer = User.builder()
+                .id("customer-1")
+                .email("customer@example.com")
+                .firstName("Test")
+                .lastName("Customer")
+                .build();
         Event event = Event.builder()
                 .id("event-1")
+                .name("Live Concert")
+                .location("Ho Chi Minh City")
+                .venue("TicketFlow Arena")
                 .status(EventStatus.PUBLISHED)
                 .build();
         LocalDateTime now = LocalDateTime.ofInstant(NOW, clock.getZone());
@@ -198,6 +210,14 @@ class PaymentTransactionServiceTest {
         assertThat(vip.getSoldQuantity()).isEqualTo(5);
         assertThat(payment.getBooking().getTickets()).hasSize(2);
         verify(ticketTypeRepository, times(1)).findAllByIdInOrderByIdAsc(any());
+        org.mockito.ArgumentCaptor<PaymentCompletedEvent> eventCaptor =
+                org.mockito.ArgumentCaptor.forClass(PaymentCompletedEvent.class);
+        verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().bookingId()).isEqualTo("booking-1");
+        assertThat(eventCaptor.getValue().customerEmail()).isEqualTo("customer@example.com");
+        assertThat(eventCaptor.getValue().tickets()).hasSize(2);
+        assertThat(eventCaptor.getValue().tickets())
+                .allSatisfy(ticket -> assertThat(ticket.ticketTypeName()).isEqualTo("VIP"));
     }
 
     @Test

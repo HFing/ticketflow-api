@@ -3,6 +3,9 @@ package com.hfing.ticketflowapi.payment.mapper;
 import com.hfing.ticketflowapi.booking.dto.response.CheckoutResponse;
 import com.hfing.ticketflowapi.booking.entity.Booking;
 import com.hfing.ticketflowapi.booking.entity.BookingItem;
+import com.hfing.ticketflowapi.booking.entity.Ticket;
+import com.hfing.ticketflowapi.notification.dto.PaidTicketInfo;
+import com.hfing.ticketflowapi.notification.dto.PaymentCompletedEvent;
 import com.hfing.ticketflowapi.payment.entity.Payment;
 import com.hfing.ticketflowapi.booking.mapper.BookingMapper;
 import com.hfing.ticketflowapi.payment.dto.stripe.StripeLineItem;
@@ -44,4 +47,21 @@ public interface PaymentMapper {
 
     @Mapping(target = "paymentId", source = "id")
     PaymentSessionReference toSessionReference(Payment payment);
+
+    @Mapping(target = "paymentId", source = "id")
+    @Mapping(target = "bookingId", source = "booking.id")
+    @Mapping(target = "customerEmail", source = "booking.customer.email")
+    @Mapping(target = "customerFirstName", source = "booking.customer.firstName")
+    @Mapping(target = "customerLastName", source = "booking.customer.lastName")
+    @Mapping(target = "eventName", source = "booking.eventShow.event.name")
+    @Mapping(target = "eventLocation", source = "booking.eventShow.event.location")
+    @Mapping(target = "eventVenue", source = "booking.eventShow.event.venue")
+    @Mapping(target = "showStartTime", source = "booking.eventShow.startTime")
+    @Mapping(target = "showEndTime", source = "booking.eventShow.endTime")
+    @Mapping(target = "totalAmount", source = "amount")
+    @Mapping(target = "tickets", source = "booking.tickets")
+    PaymentCompletedEvent toPaymentCompletedEvent(Payment payment);
+
+    @Mapping(target = "ticketTypeName", source = "ticketType.name")
+    PaidTicketInfo toPaidTicketInfo(Ticket ticket);
 }

@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+import static com.hfing.ticketflowapi.common.config.KafkaTopicConfiguration.USER_REGISTRATION_TOPIC;
+
 
 @Component
 @RequiredArgsConstructor
@@ -15,7 +17,7 @@ public class UserRegistrationConsumer {
 
     private final INotificationService notificationService;
 
-    @KafkaListener(topics = "user-registration", groupId = "ticketflow-mail-group")
+    @KafkaListener(topics = USER_REGISTRATION_TOPIC, groupId = "ticketflow-mail-group")
     public void consume(UserRegisteredEvent event) {
         log.info("Consumed user registration event: {}", event);
         try {

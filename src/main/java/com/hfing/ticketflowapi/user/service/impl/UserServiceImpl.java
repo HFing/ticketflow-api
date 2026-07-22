@@ -20,6 +20,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import static com.hfing.ticketflowapi.common.config.KafkaTopicConfiguration.USER_REGISTRATION_TOPIC;
+
 
 @Service
 @RequiredArgsConstructor
@@ -54,7 +56,7 @@ public class UserServiceImpl implements IUserService {
                 savedUser.getFirstName(),
                 savedUser.getLastName());
         try {
-            kafkaTemplate.send("user-registration", savedUser.getEmail(), event);
+            kafkaTemplate.send(USER_REGISTRATION_TOPIC, savedUser.getEmail(), event);
             log.info("Published user registration event to Kafka for user: {}", savedUser.getEmail());
         } catch (Exception e) {
             log.error("Failed to publish user registration event to Kafka for user: {}", savedUser.getEmail(), e);
