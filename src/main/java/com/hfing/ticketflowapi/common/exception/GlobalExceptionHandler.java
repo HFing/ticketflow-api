@@ -15,14 +15,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.context.request.WebRequest;
 
-
-
 @RestControllerAdvice
 @Slf4j(topic = "GLOBAL-EXCEPTION")
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException exception, WebRequest request) {
+    public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException exception,
+            WebRequest request) {
         ErrorResponse response = ErrorResponse.builder()
                 .code(HttpStatus.UNAUTHORIZED.value())
                 .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
@@ -34,15 +33,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
-    //validation in DTO
+    // validation in DTO
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handlerMethodArgumentNotValidException(
             MethodArgumentNotValidException e, WebRequest request) {
 
         BindingResult bindingResult = e.getBindingResult();
         List<FieldError> fieldErrors = bindingResult.getFieldErrors();
-        List<String> errors =
-                fieldErrors.stream().map(FieldError::getDefaultMessage).toList();
+        List<String> errors = fieldErrors.stream().map(FieldError::getDefaultMessage).toList();
 
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(new Date().getTime())
@@ -77,17 +75,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(exception.getErrorCode().getHttpStatus()).body(response);
     }
 
-
-
-
-
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleAllExceptions(Exception ex, WebRequest request) {
         ErrorResponse response = buildErrorCodeResponse(ErrorCode.INTERNAL_ERROR, request);
 
         return ResponseEntity.status(ErrorCode.INTERNAL_ERROR.getHttpStatus()).body(response);
     }
-
 
     private ErrorResponse buildErrorCodeResponse(ErrorCode errorCode, WebRequest request) {
         return ErrorResponse.builder()
