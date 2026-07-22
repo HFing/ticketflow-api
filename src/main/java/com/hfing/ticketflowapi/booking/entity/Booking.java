@@ -13,10 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "bookings", uniqueConstraints = {
-        @UniqueConstraint(
-                name = "uq_bookings_customer_idempotency",
-                columnNames = {"customer_id", "idempotency_key"})
+@Table(name = "bookings", indexes = {
+        @Index(name = "idx_bookings_status_expires_at", columnList = "status, expires_at")
 })
 @Getter
 @Setter
@@ -42,12 +40,6 @@ public class Booking extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BookingStatus status;
-
-    @Column(name = "idempotency_key", nullable = false, length = 255)
-    private String idempotencyKey;
-
-    @Column(name = "request_fingerprint", nullable = false, length = 64)
-    private String requestFingerprint;
 
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;

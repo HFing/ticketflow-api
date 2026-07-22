@@ -7,6 +7,8 @@ import com.hfing.ticketflowapi.booking.dto.response.BookingSummaryResponse;
 import com.hfing.ticketflowapi.booking.service.IBookingService;
 import com.hfing.ticketflowapi.common.response.ApiResponse;
 import com.hfing.ticketflowapi.common.validation.ControllerInputValidator;
+import com.hfing.ticketflowapi.payment.service.VNPayService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,7 +19,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -27,17 +28,18 @@ import java.util.List;
 @RequestMapping("/api/v1/customer/bookings")
 public class CustomerBookingController {
     private final IBookingService bookingService;
+    private final VNPayService vnPayService;
 
     @PostMapping("/checkout")
     public ApiResponse<CheckoutResponse> checkout(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
-            @Valid @RequestBody CheckoutRequest request
+            @Valid @RequestBody CheckoutRequest request,
+            HttpServletRequest httpRequest
     ) {
         String customerId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
-        String validatedIdempotencyKey = ControllerInputValidator.requireIdempotencyKey(idempotencyKey);
         CheckoutRequest validatedRequest = ControllerInputValidator.requireRequestBody(request);
-        CheckoutResponse data = bookingService.checkout(customerId, validatedRequest, validatedIdempotencyKey);
+        CheckoutResponse data = bookingService.checkout(
+                customerId, validatedRequest, vnPayService.getClientIp(httpRequest));
         return ApiResponse.<CheckoutResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Payment initialized successfully")

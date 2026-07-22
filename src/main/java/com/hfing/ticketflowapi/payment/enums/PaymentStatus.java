@@ -2,8 +2,7 @@ package com.hfing.ticketflowapi.payment.enums;
 
 public enum PaymentStatus {
     PENDING,
-    PROCESSING,
-    PAID,
+    SUCCESS,
     FAILED,
     CANCELLED,
     EXPIRED,

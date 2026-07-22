@@ -1,52 +1,39 @@
 package com.hfing.ticketflowapi.payment.scheduler;
 
 import com.hfing.ticketflowapi.booking.enums.BookingStatus;
-import com.hfing.ticketflowapi.payment.config.PaymentProperties;
-import com.hfing.ticketflowapi.payment.service.PaymentTransactionService;
-import com.hfing.ticketflowapi.payment.service.StripeCheckoutService;
-import com.hfing.ticketflowapi.payment.repository.PaymentRepository;
+import com.hfing.ticketflowapi.booking.repository.BookingRepository;
+import com.hfing.ticketflowapi.booking.service.IBookingService;
 import com.hfing.ticketflowapi.common.exception.AppException;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.data.domain.PageRequest;
-
-import java.time.Clock;
-import java.time.Instant;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
+@Slf4j(topic = "PAYMENT-EXPIRATION-SCHEDULER")
 public class PaymentExpirationScheduler {
-    private final PaymentRepository paymentRepository;
-    private final PaymentTransactionService paymentTransactionService;
-    private final StripeCheckoutService stripeCheckoutService;
-    private final PaymentProperties paymentProperties;
-    private final Clock paymentClock;
+    private final BookingRepository bookingRepository;
+    private final IBookingService bookingService;
 
-    @Scheduled(fixedDelayString = "${payment.expiration-scan-interval}")
+    @Scheduled(fixedDelayString = "${vnpay.expiration-scan-interval-ms:10000}")
     public void expireHeldInventory() {
-        Instant now = paymentClock.instant();
-        for (String paymentId : paymentRepository.findExpiredPaymentIds(
-                BookingStatus.PENDING_PAYMENT,
-                now,
-                PageRequest.of(0, paymentProperties.expirationBatchSize()))) {
-            expireOne(paymentId, now);
-        }
+        Instant now = Instant.now();
+        bookingRepository.findExpiredBookingIds(
+                        BookingStatus.PENDING_PAYMENT,
+                        now,
+                        PageRequest.of(0, 100))
+                .forEach(bookingId -> expireOne(bookingId, now));
     }
 
-    private void expireOne(String paymentId, Instant now) {
+    private void expireOne(String bookingId, Instant now) {
         try {
-            paymentTransactionService.getExpirationCandidate(paymentId, now)
-                    .ifPresent(candidate -> {
-                        if (candidate.providerSessionId() != null) {
-                            stripeCheckoutService.expireSession(candidate.providerSessionId());
-                        }
-                        paymentTransactionService.expire(candidate.paymentId(), now);
-                    });
+            bookingService.expirePendingBooking(bookingId, now);
         } catch (AppException exception) {
-            log.warn("Payment expiration will be retried for paymentId={}", paymentId);
+            log.warn("Booking expiration will be retried for bookingId={}, reason={}",
+                    bookingId, exception.getMessage());
         }
     }
 }

@@ -1,7 +1,6 @@
 package com.hfing.ticketflowapi.booking.dto.response;
 
 import com.hfing.ticketflowapi.booking.enums.BookingStatus;
-import com.hfing.ticketflowapi.payment.dto.response.PaymentResponse;
 import lombok.Builder;
 
 import java.math.BigDecimal;
@@ -11,15 +10,13 @@ import java.util.List;
 
 @Builder
 public record BookingDetailResponse(
-        String id,
-        String eventName,
-        String location,
-        LocalDateTime showStartTime,
-        LocalDateTime showEndTime,
-        BigDecimal totalAmount,
-        BookingStatus status,
-        List<BookingItemResponse> items,
-        PaymentResponse payment,
-        Instant createdAt
-) {
+                String id,
+                String eventName,
+                String location,
+                LocalDateTime showStartTime,
+                LocalDateTime showEndTime,
+                BigDecimal totalAmount,
+                BookingStatus status,
+                List<BookingItemResponse> items,
+                Instant createdAt) {
 }

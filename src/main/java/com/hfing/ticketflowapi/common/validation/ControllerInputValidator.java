@@ -6,7 +6,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.util.StringUtils;
 
 public final class ControllerInputValidator {
-    private static final int MAX_IDEMPOTENCY_KEY_LENGTH = 255;
 
     private ControllerInputValidator() {
     }
@@ -23,13 +22,5 @@ public final class ControllerInputValidator {
             throw new AppException(ErrorCode.REQUEST_BODY_REQUIRED);
         }
         return request;
-    }
-
-    public static String requireIdempotencyKey(String idempotencyKey) {
-        if (!StringUtils.hasText(idempotencyKey)
-                || idempotencyKey.length() > MAX_IDEMPOTENCY_KEY_LENGTH) {
-            throw new AppException(ErrorCode.IDEMPOTENCY_KEY_REQUIRED);
-        }
-        return idempotencyKey;
     }
 }
