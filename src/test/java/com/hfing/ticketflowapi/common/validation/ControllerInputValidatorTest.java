@@ -57,4 +57,13 @@ class ControllerInputValidatorTest {
         CheckoutRequest request = new CheckoutRequest("show-1", List.of());
         assertSame(request, ControllerInputValidator.requireRequestBody(request));
     }
+
+    @Test
+    void requireIdempotencyKeyRejectsBlankValue() {
+        AppException exception = assertThrows(
+                AppException.class,
+                () -> ControllerInputValidator.requireIdempotencyKey(" "));
+
+        assertEquals(ErrorCode.IDEMPOTENCY_KEY_REQUIRED, exception.getErrorCode());
+    }
 }

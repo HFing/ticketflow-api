@@ -42,6 +42,19 @@ spring:
           starttls:
             enable: true
 
+
+payment:
+  currency: ${PAYMENT_CURRENCY:VND}
+  hold-duration: ${PAYMENT_HOLD_DURATION:PT5M}
+  expiration-scan-interval: ${PAYMENT_EXPIRATION_SCAN_INTERVAL:PT5S}
+  expiration-batch-size: ${PAYMENT_EXPIRATION_BATCH_SIZE:100}
+  stripe:
+    secret-key: ${STRIPE_SECRET_KEY}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+    test-mode-only: ${STRIPE_TEST_MODE_ONLY:true}
+    success-url: ${STRIPE_CHECKOUT_SUCCESS_URL:http://localhost:8080/api/v1/payments/stripe/success?session_id={CHECKOUT_SESSION_ID}}
+    cancel-url: ${STRIPE_CHECKOUT_CANCEL_URL:http://localhost:5173/payment/cancel}
+
 springdoc:
   api-docs:
     path: /v3/api-docs

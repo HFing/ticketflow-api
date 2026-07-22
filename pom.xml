@@ -29,6 +29,7 @@
     <properties>
         <java.version>25</java.version>
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
+        <stripe-java.version>33.1.1</stripe-java.version>
     </properties>
     <dependencies>
 
@@ -133,6 +134,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.stripe</groupId>
+            <artifactId>stripe-java</artifactId>
+            <version>${stripe-java.version}</version>
         </dependency>
 
     </dependencies>

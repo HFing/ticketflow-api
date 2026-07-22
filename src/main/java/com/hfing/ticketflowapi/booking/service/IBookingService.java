@@ -8,9 +8,11 @@ import com.hfing.ticketflowapi.booking.dto.response.BookingSummaryResponse;
 import java.util.List;
 
 public interface IBookingService {
-    CheckoutResponse checkout(String customerId, CheckoutRequest request);
+    CheckoutResponse checkout(String customerId, CheckoutRequest request, String idempotencyKey);
 
     List<BookingSummaryResponse> getMyBookings(String customerId);
 
     BookingDetailResponse getMyBookingDetail(String customerId, String bookingId);
+
+    void cancelBooking(String customerId, String bookingId);
 }

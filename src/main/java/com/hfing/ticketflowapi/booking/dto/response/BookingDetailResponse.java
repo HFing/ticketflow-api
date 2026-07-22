@@ -1,6 +1,7 @@
 package com.hfing.ticketflowapi.booking.dto.response;
 
 import com.hfing.ticketflowapi.booking.enums.BookingStatus;
+import com.hfing.ticketflowapi.payment.dto.response.PaymentResponse;
 import lombok.Builder;
 
 import java.math.BigDecimal;

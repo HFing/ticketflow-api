@@ -1,140 +1,88 @@
 package com.hfing.ticketflowapi.booking.service.impl;
 
-import com.hfing.ticketflowapi.booking.dto.request.CheckoutItemRequest;
 import com.hfing.ticketflowapi.booking.dto.request.CheckoutRequest;
 import com.hfing.ticketflowapi.booking.dto.response.BookingDetailResponse;
 import com.hfing.ticketflowapi.booking.dto.response.BookingSummaryResponse;
 import com.hfing.ticketflowapi.booking.dto.response.CheckoutResponse;
-import com.hfing.ticketflowapi.booking.dto.response.PaymentResponse;
 import com.hfing.ticketflowapi.booking.entity.Booking;
-import com.hfing.ticketflowapi.booking.entity.BookingItem;
-import com.hfing.ticketflowapi.booking.entity.Payment;
-import com.hfing.ticketflowapi.booking.entity.Ticket;
-import com.hfing.ticketflowapi.booking.enums.BookingStatus;
-import com.hfing.ticketflowapi.booking.enums.PaymentMethod;
-import com.hfing.ticketflowapi.booking.enums.PaymentStatus;
-import com.hfing.ticketflowapi.booking.enums.TicketStatus;
 import com.hfing.ticketflowapi.booking.mapper.BookingMapper;
 import com.hfing.ticketflowapi.booking.repository.BookingRepository;
-import com.hfing.ticketflowapi.booking.repository.PaymentRepository;
 import com.hfing.ticketflowapi.booking.service.IBookingService;
 import com.hfing.ticketflowapi.common.exception.AppException;
 import com.hfing.ticketflowapi.common.exception.ErrorCode;
-import com.hfing.ticketflowapi.event.entity.EventShow;
-import com.hfing.ticketflowapi.event.entity.TicketType;
-import com.hfing.ticketflowapi.event.enums.EventStatus;
-import com.hfing.ticketflowapi.event.enums.TicketTypeStatus;
-import com.hfing.ticketflowapi.event.repository.EventShowRepository;
-import com.hfing.ticketflowapi.event.repository.TicketTypeRepository;
-import com.hfing.ticketflowapi.user.entity.User;
-import com.hfing.ticketflowapi.user.repository.UserRepository;
+import com.hfing.ticketflowapi.payment.dto.stripe.CreateStripeCheckoutCommand;
+import com.hfing.ticketflowapi.payment.dto.stripe.StripeCheckoutSession;
+import com.hfing.ticketflowapi.payment.dto.internal.PaymentReservation;
+import com.hfing.ticketflowapi.payment.dto.internal.PaymentSessionReference;
+import com.hfing.ticketflowapi.payment.dto.response.PaymentResponse;
+import com.hfing.ticketflowapi.payment.entity.Payment;
+import com.hfing.ticketflowapi.payment.mapper.PaymentMapper;
+import com.hfing.ticketflowapi.payment.repository.PaymentRepository;
+import com.hfing.ticketflowapi.payment.service.PaymentTransactionService;
+import com.hfing.ticketflowapi.payment.service.StripeCheckoutService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.dao.DataIntegrityViolationException;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class BookingServiceImpl implements IBookingService {
-    private final UserRepository userRepository;
-    private final EventShowRepository eventShowRepository;
-    private final TicketTypeRepository ticketTypeRepository;
+    private static final int MAX_IDEMPOTENCY_KEY_LENGTH = 255;
+
+    private final PaymentTransactionService paymentTransactionService;
+    private final StripeCheckoutService stripeCheckoutService;
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
     private final BookingMapper bookingMapper;
+    private final PaymentMapper paymentMapper;
 
     @Override
-    @Transactional
-    public CheckoutResponse checkout(String customerId, CheckoutRequest request) {
-        User customer = userRepository.findById(customerId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        EventShow eventShow = eventShowRepository.findById(request.eventShowId())
-                .orElseThrow(() -> new AppException(ErrorCode.SHOW_NOT_FOUND));
-
-        if (eventShow.getEvent().getStatus() != EventStatus.PUBLISHED) {
-            throw new AppException(ErrorCode.EVENT_NOT_PUBLISHED);
+    public CheckoutResponse checkout(
+            String customerId,
+            CheckoutRequest request,
+            String idempotencyKey) {
+        validateIdempotencyKey(idempotencyKey);
+        String requestFingerprint = fingerprint(request);
+        PaymentReservation reservation;
+        try {
+            reservation = paymentTransactionService.reserve(
+                    customerId,
+                    request,
+                    idempotencyKey,
+                    requestFingerprint);
+        } catch (DataIntegrityViolationException exception) {
+            reservation = paymentTransactionService.findExistingReservation(
+                            customerId, idempotencyKey, requestFingerprint)
+                    .orElseThrow(() -> exception);
         }
 
-        LocalDateTime paidAt = LocalDateTime.now();
-        if (!eventShow.isOnSale(paidAt)) {
-            throw new AppException(ErrorCode.SHOW_NOT_ON_SALE);
-        }
+        StripeCheckoutSession session = reservation.providerSessionId() == null
+                ? stripeCheckoutService.createSession(CreateStripeCheckoutCommand.builder()
+                        .bookingId(reservation.bookingId())
+                        .amount(reservation.amount())
+                        .currency(reservation.currency())
+                        .customerEmail(reservation.customerEmail())
+                        .expiresAt(reservation.expiresAt())
+                        .items(reservation.items())
+                        .build())
+                : stripeCheckoutService.retrieveSession(reservation.providerSessionId());
 
-        Set<String> ticketTypeIds = new HashSet<>();
-        for (CheckoutItemRequest item : request.items()) {
-            if (!ticketTypeIds.add(item.ticketTypeId())) {
-                throw new AppException(ErrorCode.DUPLICATE_TICKET_TYPE);
+        try {
+            return paymentTransactionService.attachGatewayPayment(reservation.paymentId(), session);
+        } catch (AppException exception) {
+            if (exception.getErrorCode() == ErrorCode.PAYMENT_INVALID_STATE) {
+                stripeCheckoutService.expireSession(session.providerSessionId());
             }
+            throw exception;
         }
-
-
-        List<TicketType> lockedTicketTypes = ticketTypeRepository.findAllByIdInOrderByIdAsc(ticketTypeIds);
-        if (lockedTicketTypes.size() != ticketTypeIds.size()) {
-            throw new AppException(ErrorCode.TICKET_TYPE_NOT_FOUND);
-        }
-
-        Map<String, TicketType> ticketTypesById = new HashMap<>();
-        lockedTicketTypes.forEach(ticketType -> ticketTypesById.put(ticketType.getId(), ticketType));
-
-        Booking booking = Booking.builder()
-                .customer(customer)
-                .eventShow(eventShow)
-                .totalAmount(BigDecimal.ZERO)
-                .status(BookingStatus.PAID)
-                .build();
-
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        for (CheckoutItemRequest requestedItem : request.items()) {
-            TicketType ticketType = ticketTypesById.get(requestedItem.ticketTypeId());
-            validateTicketTypeOrThrow(eventShow, ticketType, requestedItem.quantity());
-
-            BigDecimal subtotal = ticketType.getPrice().multiply(BigDecimal.valueOf(requestedItem.quantity()));
-            BookingItem bookingItem = BookingItem.builder()
-                    .booking(booking)
-                    .ticketType(ticketType)
-                    .quantity(requestedItem.quantity())
-                    .unitPrice(ticketType.getPrice())
-                    .subtotal(subtotal)
-                    .build();
-            booking.getItems().add(bookingItem);
-
-            ticketType.setSoldQuantity(ticketType.getSoldQuantity() + requestedItem.quantity());
-            if (ticketType.getAvailableQuantity() == 0) {
-                ticketType.setStatus(TicketTypeStatus.SOLD_OUT);
-            }
-
-            for (int i = 0; i < requestedItem.quantity(); i++) {
-                booking.getTickets().add(Ticket.builder()
-                        .booking(booking)
-                        .ticketType(ticketType)
-                        .ticketCode("TKT-" + UUID.randomUUID().toString().replace("-", "").toUpperCase())
-                        .status(TicketStatus.VALID)
-                        .build());
-            }
-            totalAmount = totalAmount.add(subtotal);
-        }
-        booking.setTotalAmount(totalAmount);
-
-        Booking savedBooking = bookingRepository.save(booking);
-        Payment payment = paymentRepository.save(Payment.builder()
-                .booking(savedBooking)
-                .amount(totalAmount)
-                .method(PaymentMethod.FAKE)
-                .status(PaymentStatus.SUCCESS)
-                .transactionCode("FAKE-" + UUID.randomUUID().toString().replace("-", "").toUpperCase())
-                .paidAt(paidAt)
-                .build());
-
-        return bookingMapper.toCheckoutResponse(savedBooking, payment);
     }
 
     @Override
@@ -148,25 +96,45 @@ public class BookingServiceImpl implements IBookingService {
     public BookingDetailResponse getMyBookingDetail(String customerId, String bookingId) {
         Booking booking = bookingRepository.findByIdAndCustomerId(bookingId, customerId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        PaymentResponse payment = paymentRepository.findResponseByBookingId(bookingId)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        Payment paymentEntity = paymentRepository.findByBookingId(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+        PaymentResponse payment = paymentMapper.toResponse(paymentEntity);
 
         return bookingMapper.toBookingDetailResponse(booking, payment);
     }
 
-    private void validateTicketTypeOrThrow(EventShow eventShow, TicketType ticketType, int quantity) {
-        if (!ticketType.getEventShow().getId().equals(eventShow.getId())) {
-            throw new AppException(ErrorCode.TICKET_TYPE_NOT_IN_SHOW);
+    @Override
+    public void cancelBooking(String customerId, String bookingId) {
+        PaymentSessionReference candidate = paymentTransactionService
+                .getCancellationCandidate(customerId, bookingId);
+        if (candidate.providerSessionId() != null) {
+            stripeCheckoutService.expireSession(candidate.providerSessionId());
         }
-        if (ticketType.getStatus() != TicketTypeStatus.ACTIVE) {
-            throw new AppException(ErrorCode.TICKET_TYPE_NOT_AVAILABLE);
-        }
-        if (quantity > ticketType.getMaxPerOrder()) {
-            throw new AppException(ErrorCode.TICKET_QUANTITY_EXCEEDED);
-        }
-        if (quantity > ticketType.getAvailableQuantity()) {
-            throw new AppException(ErrorCode.INSUFFICIENT_TICKET_QUANTITY);
+        paymentTransactionService.cancel(candidate.paymentId());
+    }
+
+    private void validateIdempotencyKey(String idempotencyKey) {
+        if (!StringUtils.hasText(idempotencyKey)
+                || idempotencyKey.length() > MAX_IDEMPOTENCY_KEY_LENGTH) {
+            throw new AppException(ErrorCode.IDEMPOTENCY_KEY_REQUIRED);
         }
     }
 
+    private String fingerprint(CheckoutRequest request) {
+        StringBuilder canonicalRequest = new StringBuilder(request.eventShowId());
+        request.items().stream()
+                .sorted((left, right) -> left.ticketTypeId().compareTo(right.ticketTypeId()))
+                .forEach(item -> canonicalRequest
+                        .append('|')
+                        .append(item.ticketTypeId())
+                        .append(':')
+                        .append(item.quantity()));
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(canonicalRequest.toString().getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is not available", exception);
+        }
+    }
 }
