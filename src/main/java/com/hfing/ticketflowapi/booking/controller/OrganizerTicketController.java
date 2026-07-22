@@ -4,10 +4,13 @@ import com.hfing.ticketflowapi.booking.dto.request.CheckInTicketRequest;
 import com.hfing.ticketflowapi.booking.dto.response.OrganizerTicketResponse;
 import com.hfing.ticketflowapi.booking.service.IOrganizerTicketService;
 import com.hfing.ticketflowapi.common.response.ApiResponse;
+import com.hfing.ticketflowapi.common.response.PageResponse;
 import com.hfing.ticketflowapi.common.validation.ControllerInputValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -17,8 +20,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -43,14 +44,15 @@ public class OrganizerTicketController {
     }
 
     @GetMapping("/event-shows/{showId}/tickets")
-    public ApiResponse<List<OrganizerTicketResponse>> getTicketsByEventShow(
+    public ApiResponse<PageResponse<OrganizerTicketResponse>> getTicketsByEventShow(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable String showId
+            @PathVariable String showId,
+            @PageableDefault(size = 20) Pageable pageable
     ) {
         String organizerId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
-        List<OrganizerTicketResponse> data =
-                organizerTicketService.getTicketsByEventShow(organizerId, showId);
-        return ApiResponse.<List<OrganizerTicketResponse>>builder()
+        PageResponse<OrganizerTicketResponse> data = PageResponse.from(
+                organizerTicketService.getTicketsByEventShow(organizerId, showId, pageable));
+        return ApiResponse.<PageResponse<OrganizerTicketResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Event show tickets retrieved successfully")
                 .data(data)

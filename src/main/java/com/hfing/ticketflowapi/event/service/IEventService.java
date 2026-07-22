@@ -9,15 +9,16 @@ import com.hfing.ticketflowapi.event.dto.response.PublicEventResponse;
 import com.hfing.ticketflowapi.event.dto.response.PublicEventSummaryResponse;
 import com.hfing.ticketflowapi.event.dto.response.TicketTypeResponse;
 import com.hfing.ticketflowapi.event.dto.request.UpdateEventRequest;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface IEventService {
 
     EventResponse createEvent(CreateEventRequest request);
 
-    List<PublicEventSummaryResponse> getPublishedUpcomingEvents();
+    Page<PublicEventSummaryResponse> getPublishedUpcomingEvents(Pageable pageable);
 
-    List<EventResponse> getAllEventsForAdmin();
+    Page<EventResponse> getAllEventsForAdmin(Pageable pageable);
 
     EventResponse getAdminEventById(String id);
 
@@ -36,7 +37,7 @@ public interface IEventService {
 
     EventResponse submitForReview(String eventId, String currentUserId, String role);
 
-    List<EventResponse> getPendingEvents();
+    Page<EventResponse> getPendingEvents(Pageable pageable);
 
     EventResponse approveEvent(String eventId);
 

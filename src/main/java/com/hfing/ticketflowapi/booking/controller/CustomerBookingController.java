@@ -6,12 +6,15 @@ import com.hfing.ticketflowapi.booking.dto.response.BookingDetailResponse;
 import com.hfing.ticketflowapi.booking.dto.response.BookingSummaryResponse;
 import com.hfing.ticketflowapi.booking.service.IBookingService;
 import com.hfing.ticketflowapi.common.response.ApiResponse;
+import com.hfing.ticketflowapi.common.response.PageResponse;
 import com.hfing.ticketflowapi.common.validation.ControllerInputValidator;
 import com.hfing.ticketflowapi.payment.service.VNPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,8 +23,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -48,10 +49,13 @@ public class CustomerBookingController {
     }
 
     @GetMapping
-    public ApiResponse<List<BookingSummaryResponse>> getMyBookings(@AuthenticationPrincipal Jwt jwt) {
+    public ApiResponse<PageResponse<BookingSummaryResponse>> getMyBookings(
+            @AuthenticationPrincipal Jwt jwt,
+            @PageableDefault(size = 20) Pageable pageable) {
         String customerId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
-        List<BookingSummaryResponse> data = bookingService.getMyBookings(customerId);
-        return ApiResponse.<List<BookingSummaryResponse>>builder()
+        PageResponse<BookingSummaryResponse> data =
+                PageResponse.from(bookingService.getMyBookings(customerId, pageable));
+        return ApiResponse.<PageResponse<BookingSummaryResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Bookings retrieved successfully")
                 .data(data)

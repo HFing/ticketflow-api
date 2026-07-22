@@ -15,6 +15,8 @@ import com.hfing.ticketflowapi.event.repository.EventShowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -53,14 +55,17 @@ public class OrganizerTicketServiceImpl implements IOrganizerTicketService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<OrganizerTicketResponse> getTicketsByEventShow(String organizerId, String showId) {
+    public Page<OrganizerTicketResponse> getTicketsByEventShow(
+            String organizerId,
+            String showId,
+            Pageable pageable) {
         EventShow eventShow = eventShowRepository.findById(showId)
                 .orElseThrow(() -> new AppException(ErrorCode.SHOW_NOT_FOUND));
         verifyOwnership(eventShow, organizerId);
 
-        return ticketRepository.findAllByBookingEventShowIdOrderByCreatedAtAsc(showId).stream()
-                .map(bookingMapper::toOrganizerTicketResponse)
-                .toList();
+        return ticketRepository
+                .findAllByBookingEventShowIdOrderByCreatedAtAsc(showId, pageable)
+                .map(bookingMapper::toOrganizerTicketResponse);
     }
 
     private void verifyOwnership(EventShow eventShow, String organizerId) {

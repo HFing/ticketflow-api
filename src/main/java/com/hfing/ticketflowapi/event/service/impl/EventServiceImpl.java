@@ -45,6 +45,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
@@ -271,10 +273,10 @@ public class EventServiceImpl implements IEventService {
     }
 
     @Override
-    public List<EventResponse> getPendingEvents() {
-        List<Event> pendingEvents = eventRepository
-                .findByStatusOrderByEarliestShowStartTime(EventStatus.PENDING_REVIEW);
-        return pendingEvents.stream().map(eventMapper::toEventResponse).toList();
+    public Page<EventResponse> getPendingEvents(Pageable pageable) {
+        return eventRepository
+                .findByStatusOrderByEarliestShowStartTime(EventStatus.PENDING_REVIEW, pageable)
+                .map(eventMapper::toEventResponse);
     }
 
     @Override
@@ -344,27 +346,24 @@ public class EventServiceImpl implements IEventService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "eventsList", key = "'published-upcoming'")
-    public List<PublicEventSummaryResponse> getPublishedUpcomingEvents() {
+    @Cacheable(value = "eventsList", key = "'published-upcoming:' + #pageable")
+    public Page<PublicEventSummaryResponse> getPublishedUpcomingEvents(Pageable pageable) {
         LocalDateTime now = LocalDateTime.now();
         return eventRepository
                 .findPublishedEventsWithUpcomingShows(
                         EventStatus.PUBLISHED,
-                        now)
-                .stream()
-                .map(event -> toPublicEventSummaryResponse(event, now))
-                .toList();
+                        now,
+                        pageable)
+                .map(event -> toPublicEventSummaryResponse(event, now));
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "eventsList", key = "'admin-all'")
-    public List<EventResponse> getAllEventsForAdmin() {
+    @Cacheable(value = "eventsList", key = "'admin-all:' + #pageable")
+    public Page<EventResponse> getAllEventsForAdmin(Pageable pageable) {
         return eventRepository
-                .findAllOrderByEarliestShowStartTime()
-                .stream()
-                .map(eventMapper::toEventResponse)
-                .toList();
+                .findAllOrderByEarliestShowStartTime(pageable)
+                .map(eventMapper::toEventResponse);
     }
 
     @Override

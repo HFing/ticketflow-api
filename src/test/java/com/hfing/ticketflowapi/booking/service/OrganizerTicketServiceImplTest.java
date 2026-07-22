@@ -23,9 +23,10 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mapstruct.factory.Mappers;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -133,26 +134,29 @@ class OrganizerTicketServiceImplTest {
 
     @Test
     void getTicketsByEventShow_whenOrganizerOwnsShow_returnsTickets() {
+        var pageable = PageRequest.of(0, 20);
         when(eventShowRepository.findById("show-1")).thenReturn(Optional.of(eventShow));
-        when(ticketRepository.findAllByBookingEventShowIdOrderByCreatedAtAsc("show-1"))
-                .thenReturn(List.of(ticket));
+        when(ticketRepository.findAllByBookingEventShowIdOrderByCreatedAtAsc("show-1", pageable))
+                .thenReturn(new PageImpl<>(java.util.List.of(ticket), pageable, 1));
 
-        var response = organizerTicketService.getTicketsByEventShow("organizer-1", "show-1");
+        var response = organizerTicketService.getTicketsByEventShow("organizer-1", "show-1", pageable);
 
         assertThat(response).hasSize(1);
-        assertThat(response.getFirst().ticketCode()).isEqualTo("TFL-8D4F1A2B");
-        verify(ticketRepository).findAllByBookingEventShowIdOrderByCreatedAtAsc("show-1");
+        assertThat(response.getContent().getFirst().ticketCode()).isEqualTo("TFL-8D4F1A2B");
+        verify(ticketRepository).findAllByBookingEventShowIdOrderByCreatedAtAsc("show-1", pageable);
     }
 
     @Test
     void getTicketsByEventShow_whenOrganizerDoesNotOwnShow_doesNotReturnTickets() {
+        var pageable = PageRequest.of(0, 20);
         when(eventShowRepository.findById("show-1")).thenReturn(Optional.of(eventShow));
 
-        assertThatThrownBy(() -> organizerTicketService.getTicketsByEventShow("organizer-2", "show-1"))
+        assertThatThrownBy(() -> organizerTicketService.getTicketsByEventShow("organizer-2", "show-1", pageable))
                 .isInstanceOf(AppException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.TICKET_FORBIDDEN_ACCESS);
 
-        verify(ticketRepository, never()).findAllByBookingEventShowIdOrderByCreatedAtAsc("show-1");
+        verify(ticketRepository, never())
+                .findAllByBookingEventShowIdOrderByCreatedAtAsc("show-1", pageable);
     }
 }
