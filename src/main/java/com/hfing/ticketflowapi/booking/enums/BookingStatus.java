@@ -1,8 +1,8 @@
 package com.hfing.ticketflowapi.booking.enums;
 
 public enum BookingStatus {
-    PENDING,
-    PAID,
+    PENDING_PAYMENT,
+    CONFIRMED,
     CANCELLED,
     EXPIRED
 }

@@ -8,11 +8,16 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "bookings")
+@Table(name = "bookings", uniqueConstraints = {
+        @UniqueConstraint(
+                name = "uq_bookings_customer_idempotency",
+                columnNames = {"customer_id", "idempotency_key"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -37,6 +42,15 @@ public class Booking extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BookingStatus status;
+
+    @Column(name = "idempotency_key", nullable = false, length = 255)
+    private String idempotencyKey;
+
+    @Column(name = "request_fingerprint", nullable = false, length = 64)
+    private String requestFingerprint;
+
+    @Column(name = "expires_at", nullable = false)
+    private Instant expiresAt;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

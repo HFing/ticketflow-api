@@ -1,9 +1,11 @@
 package com.hfing.ticketflowapi.booking.dto.response;
 
 import com.hfing.ticketflowapi.booking.enums.BookingStatus;
+import com.hfing.ticketflowapi.payment.dto.response.CheckoutPaymentResponse;
 import lombok.Builder;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 @Builder
@@ -13,7 +15,8 @@ public record CheckoutResponse(
         BigDecimal totalAmount,
         BookingStatus status,
         List<BookingItemResponse> items,
-        PaymentResponse payment,
+        CheckoutPaymentResponse payment,
+        Instant expiresAt,
         List<TicketResponse> tickets
 ) {
 }

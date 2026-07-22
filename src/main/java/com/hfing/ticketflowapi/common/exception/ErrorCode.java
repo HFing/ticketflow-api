@@ -46,6 +46,7 @@ public enum ErrorCode {
     TICKET_TYPE_NOT_IN_SHOW(400, "Ticket type does not belong to the selected event show", HttpStatus.BAD_REQUEST),
     TICKET_TYPE_NOT_AVAILABLE(400, "Ticket type is not available", HttpStatus.BAD_REQUEST),
     TICKET_QUANTITY_EXCEEDED(400, "Requested quantity exceeds the maximum allowed per order", HttpStatus.BAD_REQUEST),
+    TICKET_QUANTITY_INVALID(400, "Ticket quantity must be greater than 0", HttpStatus.BAD_REQUEST),
     INSUFFICIENT_TICKET_QUANTITY(409, "Not enough tickets available", HttpStatus.CONFLICT),
     DUPLICATE_TICKET_TYPE(400, "A ticket type must appear only once in checkout items", HttpStatus.BAD_REQUEST),
     BOOKING_NOT_FOUND(404, "Booking not found", HttpStatus.NOT_FOUND),
@@ -54,6 +55,14 @@ public enum ErrorCode {
     TICKET_NOT_VALID(400, "Ticket is not valid for check-in", HttpStatus.BAD_REQUEST),
     TICKET_ALREADY_USED(409, "Ticket has already been used", HttpStatus.CONFLICT),
     SHOW_CANCELLED(400, "Event show has been cancelled", HttpStatus.BAD_REQUEST),
+    IDEMPOTENCY_KEY_REQUIRED(400, "Idempotency-Key header is required", HttpStatus.BAD_REQUEST),
+    IDEMPOTENCY_KEY_REUSED(409, "Idempotency-Key was already used for a different checkout", HttpStatus.CONFLICT),
+    PAYMENT_NOT_FOUND(404, "Payment not found", HttpStatus.NOT_FOUND),
+    PAYMENT_GATEWAY_NOT_AVAILABLE(400, "Selected payment gateway is not available", HttpStatus.BAD_REQUEST),
+    PAYMENT_INITIALIZATION_FAILED(502, "Unable to initialize payment", HttpStatus.BAD_GATEWAY),
+    PAYMENT_WEBHOOK_INVALID(400, "Invalid payment webhook", HttpStatus.BAD_REQUEST),
+    PAYMENT_DETAILS_MISMATCH(409, "Payment amount or currency does not match booking", HttpStatus.CONFLICT),
+    PAYMENT_INVALID_STATE(409, "Payment state transition is not allowed", HttpStatus.CONFLICT),
     ;
 
     private final int code;

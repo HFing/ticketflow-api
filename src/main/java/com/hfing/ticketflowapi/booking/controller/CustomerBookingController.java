@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -30,14 +31,16 @@ public class CustomerBookingController {
     @PostMapping("/checkout")
     public ApiResponse<CheckoutResponse> checkout(
             @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CheckoutRequest request
     ) {
         String customerId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
+        String validatedIdempotencyKey = ControllerInputValidator.requireIdempotencyKey(idempotencyKey);
         CheckoutRequest validatedRequest = ControllerInputValidator.requireRequestBody(request);
-        CheckoutResponse data = bookingService.checkout(customerId, validatedRequest);
+        CheckoutResponse data = bookingService.checkout(customerId, validatedRequest, validatedIdempotencyKey);
         return ApiResponse.<CheckoutResponse>builder()
-                .code(HttpStatus.CREATED.value())
-                .message("Checkout completed successfully")
+                .code(HttpStatus.OK.value())
+                .message("Payment initialized successfully")
                 .data(data)
                 .build();
     }
@@ -64,6 +67,19 @@ public class CustomerBookingController {
                 .code(HttpStatus.OK.value())
                 .message("Booking retrieved successfully")
                 .data(data)
+                .build();
+    }
+
+    @PostMapping("/{bookingId}/cancel")
+    public ApiResponse<Void> cancelBooking(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String bookingId
+    ) {
+        String customerId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
+        bookingService.cancelBooking(customerId, bookingId);
+        return ApiResponse.<Void>builder()
+                .code(HttpStatus.OK.value())
+                .message("Booking cancelled successfully")
                 .build();
     }
 }

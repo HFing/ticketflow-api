@@ -29,4 +29,7 @@ public interface BookingRepository extends JpaRepository<Booking, String> {
 
     @EntityGraph(attributePaths = {"eventShow", "eventShow.event", "items", "items.ticketType"})
     Optional<Booking> findByIdAndCustomerId(String id, String customerId);
+
+    @EntityGraph(attributePaths = {"eventShow", "eventShow.event", "items", "items.ticketType"})
+    Optional<Booking> findByCustomerIdAndIdempotencyKey(String customerId, String idempotencyKey);
 }
