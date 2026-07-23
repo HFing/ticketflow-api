@@ -22,6 +22,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 @Builder
 public class User extends BaseEntity implements UserDetails {
 
+    public static final String DEFAULT_AVATAR_KEY = "users/default/avatar.png";
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
@@ -38,7 +40,8 @@ public class User extends BaseEntity implements UserDetails {
 
     private String phone;
 
-    private String avatarKey;
+    @Builder.Default
+    private String avatarKey = DEFAULT_AVATAR_KEY;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default

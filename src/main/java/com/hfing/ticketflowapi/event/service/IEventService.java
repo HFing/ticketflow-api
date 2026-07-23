@@ -11,10 +11,14 @@ import com.hfing.ticketflowapi.event.dto.response.TicketTypeResponse;
 import com.hfing.ticketflowapi.event.dto.request.UpdateEventRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface IEventService {
 
-    EventResponse createEvent(CreateEventRequest request);
+    EventResponse createEvent(
+            CreateEventRequest request,
+            MultipartFile shortImage,
+            MultipartFile bannerImage);
 
     Page<PublicEventSummaryResponse> getPublishedUpcomingEvents(Pageable pageable);
 

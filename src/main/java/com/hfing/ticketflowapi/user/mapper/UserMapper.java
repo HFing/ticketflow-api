@@ -22,7 +22,8 @@ public interface UserMapper {
     User toUser(CreateUserRequest request);
 
     CreateUserResponse toCreateUserResponse(User user);
-    UserDetailResponse toUserDetailResponse(User user);
+    @Mapping(target = "avatarUrl", source = "avatarUrl")
+    UserDetailResponse toUserDetailResponse(User user, String avatarUrl);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", ignore = true)
@@ -30,5 +31,6 @@ public interface UserMapper {
     @Mapping(target = "userStatus", ignore = true)
     @Mapping(target = "role", ignore = true)
     @Mapping(target = "events", ignore = true)
+    @Mapping(target = "avatarKey", ignore = true)
     void updateUserFromRequest(UpdateUserRequest request, @MappingTarget User user);
 }

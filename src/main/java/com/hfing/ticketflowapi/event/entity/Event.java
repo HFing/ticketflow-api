@@ -59,6 +59,10 @@ public class Event extends BaseEntity {
 
     private String shortImageUrl;
 
+    private String bannerKey;
+
+    private String shortImageKey;
+
     @Column(nullable = false, columnDefinition = "boolean default false")
     @Builder.Default
     private Boolean isHot = false;
