@@ -26,6 +26,10 @@ import com.hfing.ticketflowapi.event.repository.EventRepository;
 import com.hfing.ticketflowapi.event.repository.EventShowRepository;
 import com.hfing.ticketflowapi.event.repository.TicketTypeRepository;
 import com.hfing.ticketflowapi.event.service.IEventService;
+import com.hfing.ticketflowapi.mediaupload.dto.ProcessedImage;
+import com.hfing.ticketflowapi.mediaupload.dto.response.FileResponse;
+import com.hfing.ticketflowapi.mediaupload.service.IStorageService;
+import com.hfing.ticketflowapi.mediaupload.service.ImageProcessor;
 import com.hfing.ticketflowapi.user.entity.User;
 import com.hfing.ticketflowapi.user.enums.RoleType;
 import com.hfing.ticketflowapi.user.repository.UserRepository;
@@ -47,6 +51,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -60,11 +65,20 @@ public class EventServiceImpl implements IEventService {
     private final EventShowMapper eventShowMapper;
     private final TicketTypeMapper ticketTypeMapper;
     private final CacheManager cacheManager;
+    private final ImageProcessor imageProcessor;
+    private final IStorageService storageService;
 
     @Override
     @Transactional
     @CacheEvict(value = "eventsList", allEntries = true)
-    public EventResponse createEvent(CreateEventRequest request) {
+    public EventResponse createEvent(
+            CreateEventRequest request,
+            MultipartFile shortImage,
+            MultipartFile bannerImage) {
+
+        // Reject invalid images before creating anything in the database or S3.
+        ProcessedImage validatedShortImage = imageProcessor.validateShortEventImage(shortImage);
+        ProcessedImage validatedBannerImage = imageProcessor.validateBannerEventImage(bannerImage);
 
         Jwt jwt = (Jwt) SecurityContextHolder.getContext()
                 .getAuthentication()
@@ -77,7 +91,21 @@ public class EventServiceImpl implements IEventService {
         event.setStatus(EventStatus.DRAFT);
         event.setOrganizer(organizer);
 
-        return eventMapper.toEventResponse(eventRepository.save(event));
+        Event savedEvent = eventRepository.saveAndFlush(event);
+        UploadedEventImages uploadedImages = uploadEventImages(
+                savedEvent.getId(),
+                validatedShortImage,
+                validatedBannerImage);
+
+        try {
+            applyUploadedImages(savedEvent, uploadedImages);
+            eventRepository.saveAndFlush(savedEvent);
+        } catch (RuntimeException exception) {
+            deleteUploadedImages(uploadedImages);
+            throw exception;
+        }
+
+        return eventMapper.toEventResponse(savedEvent);
     }
 
     @Override
@@ -113,6 +141,8 @@ public class EventServiceImpl implements IEventService {
         authorizeModification(event, currentUserId, role);
 
         eventRepository.delete(event);
+        storageService.deleteFile(event.getShortImageKey());
+        storageService.deleteFile(event.getBannerKey());
     }
 
     @Override
@@ -148,6 +178,46 @@ public class EventServiceImpl implements IEventService {
             return;
         }
         throw new AppException(ErrorCode.FORBIDDEN);
+    }
+
+    private UploadedEventImages uploadEventImages(
+            String eventId,
+            ProcessedImage shortImage,
+            ProcessedImage bannerImage) {
+        FileResponse uploadedShortImage = storageService.upload(
+                shortImage.content(),
+                shortImage.contentType(),
+                shortImage.extension(),
+                "events/" + eventId + "/short");
+
+        try {
+            FileResponse uploadedBannerImage = storageService.upload(
+                    bannerImage.content(),
+                    bannerImage.contentType(),
+                    bannerImage.extension(),
+                    "events/" + eventId + "/banner");
+            return new UploadedEventImages(uploadedShortImage, uploadedBannerImage);
+        } catch (RuntimeException exception) {
+            storageService.deleteFile(uploadedShortImage.key());
+            throw exception;
+        }
+    }
+
+    private void applyUploadedImages(Event event, UploadedEventImages images) {
+        event.setShortImageKey(images.shortImage().key());
+        event.setShortImageUrl(images.shortImage().url());
+        event.setBannerKey(images.bannerImage().key());
+        event.setBannerUrl(images.bannerImage().url());
+    }
+
+    private void deleteUploadedImages(UploadedEventImages images) {
+        storageService.deleteFile(images.shortImage().key());
+        storageService.deleteFile(images.bannerImage().key());
+    }
+
+    private record UploadedEventImages(
+            FileResponse shortImage,
+            FileResponse bannerImage) {
     }
 
     @Override
@@ -223,6 +293,12 @@ public class EventServiceImpl implements IEventService {
         // Validate Event has at least 1 show
         if (event.getShows() == null || event.getShows().isEmpty()) {
             throw new AppException(ErrorCode.EVENT_NO_SHOWS);
+        }
+        if (event.getShortImageUrl() == null
+                || event.getShortImageUrl().isBlank()
+                || event.getBannerUrl() == null
+                || event.getBannerUrl().isBlank()) {
+            throw new AppException(ErrorCode.EVENT_IMAGES_REQUIRED);
         }
 
         // Validate each show and its ticket types

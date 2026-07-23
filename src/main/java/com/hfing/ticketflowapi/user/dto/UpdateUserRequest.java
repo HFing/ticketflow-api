@@ -20,8 +20,6 @@ public record UpdateUserRequest(
         )
         String phone,
 
-        String avatarKey,
-
         String coverKey,
 
         String description

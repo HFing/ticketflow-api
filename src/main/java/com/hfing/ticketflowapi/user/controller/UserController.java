@@ -8,12 +8,15 @@ import com.hfing.ticketflowapi.user.dto.UpdateUserRequest;
 import com.hfing.ticketflowapi.user.dto.UserDetailResponse;
 import com.hfing.ticketflowapi.user.entity.User;
 import com.hfing.ticketflowapi.user.service.IUserService;
+import com.hfing.ticketflowapi.mediaupload.dto.response.FileResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @RestController
@@ -55,6 +58,20 @@ public class UserController {
         return ApiResponse.<UserDetailResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("User info updated successfully")
+                .data(data)
+                .build();
+    }
+
+    @PutMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ApiResponse<FileResponse> updateMyAvatar(
+            @RequestPart("file") MultipartFile file,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        var userId = ControllerInputValidator.requireAuthenticatedSubject(jwt);
+        var data = userService.updateAvatar(userId, file);
+        return ApiResponse.<FileResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Avatar updated successfully")
                 .data(data)
                 .build();
     }

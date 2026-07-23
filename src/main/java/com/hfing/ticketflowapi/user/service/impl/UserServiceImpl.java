@@ -3,6 +3,10 @@ package com.hfing.ticketflowapi.user.service.impl;
 import com.hfing.ticketflowapi.common.exception.AppException;
 import com.hfing.ticketflowapi.common.exception.ErrorCode;
 import com.hfing.ticketflowapi.notification.dto.UserRegisteredEvent;
+import com.hfing.ticketflowapi.mediaupload.dto.ProcessedImage;
+import com.hfing.ticketflowapi.mediaupload.dto.response.FileResponse;
+import com.hfing.ticketflowapi.mediaupload.service.IStorageService;
+import com.hfing.ticketflowapi.mediaupload.service.ImageProcessor;
 import com.hfing.ticketflowapi.user.dto.CreateUserRequest;
 import com.hfing.ticketflowapi.user.dto.CreateUserResponse;
 import com.hfing.ticketflowapi.user.dto.UpdateUserRequest;
@@ -19,6 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import static com.hfing.ticketflowapi.common.config.KafkaTopicConfiguration.USER_REGISTRATION_TOPIC;
 
@@ -33,6 +39,8 @@ public class UserServiceImpl implements IUserService {
     private final UserMapper userMapper;
     private final IRoleService roleService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final ImageProcessor imageProcessor;
+    private final IStorageService storageService;
 
     @Override
     public CreateUserResponse createUser(CreateUserRequest request) {
@@ -48,6 +56,7 @@ public class UserServiceImpl implements IUserService {
         Role role = roleService.getRoleByName(RoleType.CUSTOMER.name());
 
         user.setRole(role);
+        user.setAvatarKey(User.DEFAULT_AVATAR_KEY);
 
         User savedUser = userRepository.save(user);
 
@@ -69,7 +78,7 @@ public class UserServiceImpl implements IUserService {
     public UserDetailResponse myInfo(String userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        return userMapper.toUserDetailResponse(user);
+        return toUserDetailResponse(user);
     }
 
     @Override
@@ -79,6 +88,41 @@ public class UserServiceImpl implements IUserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         userMapper.updateUserFromRequest(request, user);
         User savedUser = userRepository.save(user);
-        return userMapper.toUserDetailResponse(savedUser);
+        return toUserDetailResponse(savedUser);
+    }
+
+    @Override
+    @Transactional
+    public FileResponse updateAvatar(String userId, MultipartFile file) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        ProcessedImage avatar = imageProcessor.processAvatar(file);
+        FileResponse uploaded = storageService.upload(
+                avatar.content(),
+                avatar.contentType(),
+                avatar.extension(),
+                "users/" + userId + "/avatar");
+
+        String previousAvatarKey = user.getAvatarKey();
+        try {
+            user.setAvatarKey(uploaded.key());
+            userRepository.saveAndFlush(user);
+        } catch (RuntimeException exception) {
+            storageService.deleteFile(uploaded.key());
+            throw exception;
+        }
+
+        if (previousAvatarKey != null
+                && !User.DEFAULT_AVATAR_KEY.equals(previousAvatarKey)
+                && !previousAvatarKey.equals(uploaded.key())) {
+            storageService.deleteFile(previousAvatarKey);
+        }
+        return uploaded;
+    }
+
+    private UserDetailResponse toUserDetailResponse(User user) {
+        return userMapper.toUserDetailResponse(
+                user,
+                storageService.getUrl(user.getAvatarKey()));
     }
 }

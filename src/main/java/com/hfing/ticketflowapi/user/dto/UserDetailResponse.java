@@ -13,6 +13,7 @@ public record UserDetailResponse(
         String lastName,
         String phone,
         String avatarKey,
+        String avatarUrl,
         UserStatus userStatus,
         String coverKey,
         String description

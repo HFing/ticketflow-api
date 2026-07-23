@@ -16,6 +16,12 @@ public enum ErrorCode {
     TOKEN_EXPIRED(401, "JWT token has expired", HttpStatus.UNAUTHORIZED),
     TOKEN_INVALID(401, "Invalid JWT token", HttpStatus.UNAUTHORIZED),
     REQUEST_BODY_REQUIRED(400, "Request body is required", HttpStatus.BAD_REQUEST),
+    IMAGE_REQUIRED(400, "Image file is required", HttpStatus.BAD_REQUEST),
+    IMAGE_FORMAT_INVALID(400, "Only valid JPEG and PNG images are supported", HttpStatus.BAD_REQUEST),
+    IMAGE_TOO_LARGE(413, "Image file is too large", HttpStatus.PAYLOAD_TOO_LARGE),
+    IMAGE_DIMENSIONS_INVALID(400, "Image dimensions are invalid", HttpStatus.BAD_REQUEST),
+    IMAGE_PROCESSING_FAILED(400, "Unable to process image", HttpStatus.BAD_REQUEST),
+    STORAGE_OPERATION_FAILED(502, "Unable to store image", HttpStatus.BAD_GATEWAY),
 
     MISSING_LOGOUT_INFO(400, "Authorization header or refresh token is missing", HttpStatus.BAD_REQUEST),
 
@@ -31,6 +37,7 @@ public enum ErrorCode {
     EVENT_NOT_DRAFT_OR_REJECTED(400, "Event must be in DRAFT or REJECTED status to submit for review", HttpStatus.BAD_REQUEST),
     EVENT_NOT_PENDING_REVIEW(400, "Event must be in PENDING_REVIEW status", HttpStatus.BAD_REQUEST),
     EVENT_NO_SHOWS(400, "Event must have at least one show", HttpStatus.BAD_REQUEST),
+    EVENT_IMAGES_REQUIRED(400, "Event must have both a 720x958 short image and a 1280x720 banner", HttpStatus.BAD_REQUEST),
     SHOW_NO_TICKET_TYPES(400, "Each show must have at least one ticket type", HttpStatus.BAD_REQUEST),
     SHOW_INVALID_TIME(400, "Show start time must be before end time", HttpStatus.BAD_REQUEST),
     SHOW_INVALID_SALE_START_TIME(400, "Ticket sale start time must be before show start time", HttpStatus.BAD_REQUEST),

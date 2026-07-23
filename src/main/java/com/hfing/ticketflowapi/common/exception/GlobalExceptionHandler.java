@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.context.request.WebRequest;
 
 @RestControllerAdvice
@@ -73,6 +74,13 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(exception.getErrorCode().getHttpStatus()).body(response);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(
+            MaxUploadSizeExceededException exception, WebRequest request) {
+        ErrorResponse response = buildErrorCodeResponse(ErrorCode.IMAGE_TOO_LARGE, request);
+        return ResponseEntity.status(ErrorCode.IMAGE_TOO_LARGE.getHttpStatus()).body(response);
     }
 
     @ExceptionHandler(Exception.class)

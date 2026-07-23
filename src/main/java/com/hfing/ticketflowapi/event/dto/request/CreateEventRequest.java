@@ -15,9 +15,5 @@ public record CreateEventRequest(
 
                 String venue,
 
-                String bannerUrl,
-
-                String shortImageUrl,
-
                 @NotNull(message = "Event category is required") EventCategory category) {
 }

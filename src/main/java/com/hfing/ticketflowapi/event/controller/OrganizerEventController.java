@@ -13,10 +13,12 @@ import com.hfing.ticketflowapi.event.service.IEventService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,15 +28,20 @@ public class OrganizerEventController {
 
         private final IEventService eventService;
 
-        @PostMapping
+        @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
         public ApiResponse<EventResponse> createEvent(
-                        @RequestBody @Valid CreateEventRequest request) {
+                        @RequestPart("event") @Valid CreateEventRequest request,
+                        @RequestPart("shortImage") MultipartFile shortImage,
+                        @RequestPart("bannerImage") MultipartFile bannerImage) {
                 var validatedRequest = ControllerInputValidator.requireRequestBody(request);
-                var data = eventService.createEvent(validatedRequest);
+                var data = eventService.createEvent(
+                                validatedRequest,
+                                shortImage,
+                                bannerImage);
 
                 return ApiResponse.<EventResponse>builder()
                                 .code(HttpStatus.CREATED.value())
-                                .message("Event created successfully as DRAFT")
+                                .message("Event and images created successfully as DRAFT")
                                 .data(data)
                                 .build();
         }

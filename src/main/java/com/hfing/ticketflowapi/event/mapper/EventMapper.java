@@ -27,12 +27,20 @@ public interface EventMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "organizer", ignore = true)
     @Mapping(target = "shows", ignore = true)
+    @Mapping(target = "bannerUrl", ignore = true)
+    @Mapping(target = "shortImageUrl", ignore = true)
+    @Mapping(target = "bannerKey", ignore = true)
+    @Mapping(target = "shortImageKey", ignore = true)
     Event toEvent(CreateEventRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "organizer", ignore = true)
     @Mapping(target = "shows", ignore = true)
+    @Mapping(target = "bannerUrl", ignore = true)
+    @Mapping(target = "shortImageUrl", ignore = true)
+    @Mapping(target = "bannerKey", ignore = true)
+    @Mapping(target = "shortImageKey", ignore = true)
     void updateEventFromRequest(UpdateEventRequest request, @MappingTarget Event event);
 
     @Mapping(target = "organizerId", source = "organizer.id")
