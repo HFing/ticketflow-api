@@ -17,7 +17,6 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
-
 @Configuration
 @RequiredArgsConstructor
 @EnableWebSecurity
@@ -33,12 +32,16 @@ public class SecurityConfiguration {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/api/v1/events",
-            "/api/v1/events/**"
+            "/api/v1/events/**",
+            "/actuator/health",
+            "/actuator/info",
+            "/actuator/prometheus",
+            "/actuator/metrics",
+            "/actuator/metrics/**"
     };
 
     private final CustomUserDetailService userDetailService;
     private final CustomJwtDecoder jwtDecoder;
-
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -69,13 +72,11 @@ public class SecurityConfiguration {
         return new BCryptPasswordEncoder();
     }
 
-
     @Bean
     AuthenticationManager authenticationManager() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailService);
         provider.setPasswordEncoder(passwordEncoder());
         return new ProviderManager(provider);
     }
-
 
 }
