@@ -71,6 +71,9 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
 
-
+management:
+  endpoint:
+    health:
+      show-details: always
 
 
